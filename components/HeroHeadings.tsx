@@ -14,13 +14,13 @@ export function HeroHeadings() {
   // Use desktop values for SSR, update to mobile on client
   const leftXRaw = useTransform(
     scrollYProgress,
-    [0, 0.2],
-    isMobile ? ["0vw", "-8vw"] : ["0vw", "-10vw"]
+    [0, 0.3],
+    ["0vw", "-8vw"]
   );
   const rightXRaw = useTransform(
     scrollYProgress,
-    [0, 0.2],
-    isMobile ? ["0vw", "10vw"] : ["0vw", "12vw"]
+    [0, 0.3],
+    ["0vw", "10vw"]
   );
   const leftX = useSpring(leftXRaw, { stiffness: 80, damping: 18 });
   const rightX = useSpring(rightXRaw, { stiffness: 80, damping: 18 });

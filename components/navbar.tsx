@@ -7,7 +7,7 @@ import { ArrowRightIcon, LockIcon } from "lucide-react";
 
 export default function NavBar() {
   return (
-    <nav className="flex sticky top-0 z-40 px-3 md:px-6 pt-3 md:pt-4 pb-2 md:pb-3 justify-between items-center self-stretch bg-background/80 backdrop-blur-lg">
+    <nav className="flex sticky top-0 z-40 px-3 lg:px-6 pt-3 lg:pt-4 pb-2 lg:pb-3 justify-between items-center self-stretch bg-background/80 backdrop-blur-lg">
 
 
       {/* LOGO */}

@@ -141,11 +141,19 @@
 /* T E X T   S T Y L E S */
 
 .heading-1 {
-  @apply text-4xl md:text-6xl xl:text-7xl font-bold leading-none tracking-tight text-center dark:text-white text-black select-none
+  @apply text-4xl md:text-6xl xl:text-7xl font-bold leading-none tracking-tight text-center dark:text-white text-black select-none;
+}
+
+.heading-2 {
+  @apply text-2xl md:text-3xl xl:text-4xl font-medium select-none leading-none tracking-tight;
 }
 
 .subtitle-1 {
   @apply text-sm md:text-base text-muted-foreground font-medium text-center leading-tight tracking-tight select-none antialiased align-middle
+}
+
+.tag-1 {
+  @apply text-[11px] font-bold leading-tight tracking-tight select-none antialiased
 }
 
 .button-1 {
