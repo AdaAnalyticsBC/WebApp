@@ -2,62 +2,63 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { useRef, useMemo, useState, useContext, createContext } from 'react';
+import { useRef, useMemo, useState, createContext } from 'react';
 import * as THREE from 'three';
 import { useSpring, a } from '@react-spring/three';
-
+import { motion } from 'motion/react';
 
 const questionPool = [
-  'Will crypto replace fiat currencies?',
-  'Can AI beat the market long-term?',
-  'What triggers SEC investigations?',
-  'How is insider trading detected?',
-  'What drives whale movements in crypto?',
-  'Are stablecoins truly stable?',
-  'How transparent are hedge funds?',
-  'Do social signals move markets?',
-  'How risky is DeFi yield farming?',
-  'Can sentiment predict crashes?',
-  'Should trading bots be regulated?',
-  'What’s the future of CBDCs?',
-  'Can governance tokens impact law?',
-  'Will ETFs disrupt crypto markets?',
-  'Do tokenomics affect investor trust?'
+  "What’s the best way to hedge against inflation in 2024?",
+  "How do ETFs compare to mutual funds for long-term growth?",
+  "What are the risks of algorithmic trading for retail investors?",
+  "How does AI impact modern portfolio management?",
+  "180 Redditors want to buy SPY.",
+  "Most discussed stock this week: NVDA.",
+  "Is now a good time to rebalance a 60/40 portfolio?",
+  "Why is TSLA so volatile this month?",
+  "What are the best dividend stocks for 2024?",
+  "Redditors are bullish on QQQ.",
 ];
 
+// Deterministic seeded random number generator
+function mulberry32(seed: number) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
 // Organic "galaxy" style node distribution
-function getHardcodedNodes() {
+function getHardcodedNodes(size = 0.14) {
   const nodes = [];
   const radius = 7;
   const total = 160;
-  let spreadFactor = 0.15;
-  if (typeof window !== 'undefined') {
-    const width = window.innerWidth;
-    if (width >= 1200) {
-      spreadFactor = 0.6;
-    } else if (width >= 800) {
-      spreadFactor = 0.3;
-    } else {
-      spreadFactor = 0.15;
-    }
-  }
+  let spreadFactor = 0.5;
 
+  // Use a fixed seed for deterministic layout
+  const rand = mulberry32(42);
+
+  // Make every 6th node blue, rest grey
+  let blueIndex = 0;
   for (let i = 0; i < total; i++) {
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    const r = radius * (1 + Math.random() * spreadFactor);
+    const theta = rand() * Math.PI * 2;
+    const phi = Math.acos(2 * rand() - 1);
+    const r = radius * (1 + rand() * spreadFactor);
 
     const x = r * Math.sin(phi) * Math.cos(theta);
     const y = r * Math.sin(phi) * Math.sin(theta);
     const z = r * Math.cos(phi);
 
+    const isBlue = i % 6 === 0;
     nodes.push({
       position: [x, y, z] as [number, number, number],
-      label: questionPool[i % questionPool.length],
-      size: 0.14,
-      hoverable: i % 2 === 0,
+      label: isBlue ? questionPool[blueIndex++ % questionPool.length] : "",
+      size, // use the parameter
+      hoverable: isBlue,
       visibleDistance: r,
-      isBlue: i % 2 === 0
+      isBlue
     });
   }
 
@@ -87,10 +88,10 @@ function Node({
 }) {
   const ref = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { isDragging } = useContext(DragContext);
-  const lastShownRef = useRef<number>(0);
   const [showTooltip, setShowTooltip] = useState(false);
+
+  // Pick a random finance question/info for blue nodes
+  const [financeInfo] = useState(() => questionPool[Math.floor(Math.random() * questionPool.length)]);
 
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
 
@@ -102,53 +103,26 @@ function Node({
   }, []);
 
   useFrame(() => {
-    if (ref.current) ref.current.lookAt(0, 0, 0);
+    // Always face the camera in 2D (no rotation)
+    if (ref.current) {
+      ref.current.rotation.set(0.2, 0, 0.5);
+    }
   });
 
   // Force all visibleDistance < 7 nodes to always be bright sky blue
-  const color = isBlue ? '#0ea5e9' : '#e5e5e5';
+  const color = isBlue ? '#38bdf8' : '#FAFAFA';
 
   const handlePointerOver = () => {
     if (!hoverable || isMobileOrTablet) return;
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setHovered(true);
+    setShowTooltip(true);
   };
 
   const handlePointerOut = () => {
     if (!hoverable || isMobileOrTablet) return;
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setHovered(false), 600);
+    setHovered(false);
+    setShowTooltip(false);
   };
-
-  useEffect(() => {
-    const now = Date.now();
-
-    if (hovered && isBlue && now - lastTooltipTime > 800) {
-      lastTooltipTime = now;
-      setShowTooltip(true);
-    } else if (!hovered) {
-      setTimeout(() => setShowTooltip(false), 100); // only hide with slight delay
-    }
-  }, [hovered, isBlue]);
-
-  useEffect(() => {
-    if (isMobileOrTablet && isBlue) {
-      const interval = setInterval(() => {
-        if (Date.now() - lastTooltipTime > 800) {
-          setHovered(Math.random() < 0.03);
-        } else {
-          setHovered(false);
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isMobileOrTablet, isBlue]);
-
-  useEffect(() => {
-    return () => {
-      lastTooltipTime = Date.now(); // track when tooltip ends
-    };
-  }, [showTooltip]);
 
   const { scale } = useSpring({
     scale: hovered ? 1.5 : 1,
@@ -157,35 +131,44 @@ function Node({
 
   return (
     <>
-      <mesh
-        position={position}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      >
-        <boxGeometry args={[size * 10, size * 10, 0.1]} />
-        <meshBasicMaterial transparent opacity={0} />
-      </mesh>
+      {hoverable && (
+        <mesh
+          position={position}
+          rotation={[0, 0, 0]}
+          onPointerOver={handlePointerOver}
+          onPointerOut={handlePointerOut}
+        >
+          <boxGeometry args={[2, 2, 0.1]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+      )}
 
       <a.mesh
         ref={ref}
         position={position}
         scale={scale}
+        rotation={[0, 0, 0]}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       >
         <boxGeometry args={[size, size, 0.05]} />
         <meshStandardMaterial
           color={color}
-          emissive={isBlue ? '#0ea5e9' : '#000000'}
+          emissive={isBlue ? '#38bdf8' : '#FAFAFA'}
           emissiveIntensity={isBlue ? 0.4 : 0}
         />
         {showTooltip && (
-          <Html position={[0, size * 1.5, 0]} center distanceFactor={10}>
-            <div
-              className={`text-[0.875rem] font-bold text-foreground bg-neutral-100 px-3 py-2 rounded-md backdrop-blur-lg shadow-lg text-center whitespace-nowrap`}
+          <Html position={[0, size * 1.5, 0]} center distanceFactor={10} zIndexRange={[isBlue ? 50 : 20, 0]}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.18, ease: "easeInOut" }}
+              className={`${isBlue ? "z-50" : "z-20"} text-[14px] font-bold text-foreground bg-neutral-100 px-3 py-2 rounded-md backdrop-blur-lg shadow-lg text-center whitespace-nowrap select-none`}
+              style={{ zIndex: isBlue ? 50 : 20, position: 'relative' }}
             >
-              {label.toUpperCase()}
-            </div>
+              {financeInfo}
+            </motion.div>
           </Html>
         )}
       </a.mesh>
@@ -197,14 +180,14 @@ function Node({
             args={[new Float32Array([...position, 0, 0, 0]), 3]}
           />
         </bufferGeometry>
-        <lineBasicMaterial color="#f5f5f5" linewidth={1} />
+        <lineBasicMaterial color="#FAFAFA" linewidth={1} />
       </line>
     </>
   );
 }
 
-function NodeGroup() {
-  const nodes = useMemo(() => getHardcodedNodes(), []);
+function NodeGroup({ size = 0.14 }: { size?: number }) {
+  const nodes = useMemo(() => getHardcodedNodes(size), [size]);
   return <>{nodes.map((node, i) => <Node key={i} {...node} />)}</>;
 }
 
@@ -257,14 +240,13 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
 
 export default function GrokGalaxy() {
   return (
-    <div className="relative w-full h-[500px] sm:h-[600px] md:h-[700px] lg:h-[800px]">
-      <div className="absolute top-1/2 left-1/8 right-1/8 bottom-1/2 flex flex-col items-center justify-center gap-2 z-10 bg-[radial-gradient(circle,_rgba(0,0,0,0.12)_0%,_transparent_100%)]"></div>
+    <div className="relative w-full h-[500px] md:h-screen">
       <div className="w-full h-full relative z-10 rounded-xl overflow-visible">
         <Canvas camera={{ position: [0, 0, 20], fov: 60 }} className="w-full h-full">
-          <ambientLight intensity={0.7} />
-          <pointLight position={[10, 10, 10]} />
+          <ambientLight intensity={1} />
+          <pointLight position={[10, 60, 10]} intensity={0.2} />
           <AutoRotate>
-            <NodeGroup />
+            <NodeGroup size={0.1} />
           </AutoRotate>
         </Canvas>
       </div>

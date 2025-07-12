@@ -28,7 +28,7 @@ export default function NavBar() {
         <Link href="/login">
           <Button variant="link" className="w-fit h-fit pl-3 pr-2 py-1.5 text-[10px] font-semibold text-foreground rounded-full gap-1">
             LOG IN
-            <LockIcon className="size-[14px]" />
+            <LockIcon size={14} />
           </Button>
         </Link>
 
@@ -36,10 +36,10 @@ export default function NavBar() {
         <Link href="/apply">
           <Button 
             variant="default" 
-            className="w-fit h-fit bg-primary pl-3 pr-2 py-1.5 md:py-2 text-[10px] font-semibold text-primary-foreground rounded-full gap-1.5 md:gap-6">
+            className="w-fit h-fit bg-primary pl-3 pr-2 py-1.5 md:py-2 text-[10px] justify-center content-center font-semibold text-primary-foreground rounded-full gap-1.5 md:gap-6">
             <span className="block md:hidden">JOIN</span>
             <span className="hidden md:block">APPLY TO JOIN</span>
-            <ArrowRightIcon className="size-[14px]" />
+            <ArrowRightIcon size={14} />
           </Button>
         </Link>
       </div>

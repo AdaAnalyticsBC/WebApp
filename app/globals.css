@@ -141,17 +141,26 @@
 /* T E X T   S T Y L E S */
 
 .heading-1 {
-  @apply text-3xl md:text-5xl lg:text-7xl font-bold leading-none tracking-tight text-center dark:text-white text-black select-none
+  @apply text-4xl md:text-6xl xl:text-7xl font-bold leading-none tracking-tight text-center dark:text-white text-black select-none
 }
 
 .subtitle-1 {
-  @apply text-sm md:text-base text-muted-foreground font-medium text-center leading-tight tracking-tight select-none
+  @apply text-sm md:text-base text-muted-foreground font-medium text-center leading-tight tracking-tight select-none antialiased align-middle
 }
 
 .button-1 {
-  @apply text-[10px] font-bold leading-tight text-white tracking-tight select-none
+  @apply text-[11px] font-bold leading-tight text-white tracking-tight select-none antialiased align-middle
 }
 
 .button-2 {
-  @apply text-[10px] font-bold leading-tight text-primary tracking-tight select-none
+  @apply text-[11px] font-bold leading-tight text-primary tracking-tight select-none
+}
+
+.heading-gradient-black {
+  @apply bg-gradient-to-r from-black via-neutral-700 to-neutral-700 text-transparent bg-clip-text;
+  filter: drop-shadow(0 16px 16px rgba(0,0,0,0.24));
+}
+.heading-gradient-grey {
+  @apply bg-gradient-to-r from-neutral-700 via-neutral-700 to-black text-transparent bg-clip-text;
+  filter: drop-shadow(0 16px 16px rgba(0,0,0,0.24));
 }
