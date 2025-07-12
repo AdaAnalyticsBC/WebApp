@@ -15,12 +15,12 @@ export function HeroHeadings() {
   const leftXRaw = useTransform(
     scrollYProgress,
     [0, 0.2],
-    isMobile ? ["0vw", "-8vw"] : ["-8vw", "-20vw"]
+    isMobile ? ["0vw", "-8vw"] : ["0vw", "-10vw"]
   );
   const rightXRaw = useTransform(
     scrollYProgress,
     [0, 0.2],
-    isMobile ? ["0vw", "10vw"] : ["8vw", "20vw"]
+    isMobile ? ["0vw", "10vw"] : ["0vw", "12vw"]
   );
   const leftX = useSpring(leftXRaw, { stiffness: 80, damping: 18 });
   const rightX = useSpring(rightXRaw, { stiffness: 80, damping: 18 });

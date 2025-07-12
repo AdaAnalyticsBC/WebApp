@@ -1,11 +1,12 @@
 'use client';
 
+import React, { useRef, useMemo, useState, useEffect, createContext, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { useRef, useMemo, useState, createContext } from 'react';
 import * as THREE from 'three';
 import { useSpring, a } from '@react-spring/three';
 import { motion } from 'motion/react';
+import { Particles } from "./magicui/particles";
 
 const questionPool = [
   "What’s the best way to hedge against inflation in 2024?",
@@ -57,7 +58,6 @@ function getHardcodedNodes(size = 0.14) {
       label: isBlue ? questionPool[blueIndex++ % questionPool.length] : "",
       size, // use the parameter
       hoverable: isBlue,
-      visibleDistance: r,
       isBlue
     });
   }
@@ -65,25 +65,17 @@ function getHardcodedNodes(size = 0.14) {
   return nodes;
 }
 
-const DragContext = createContext<{ isDragging: boolean }>({ isDragging: false });
-
-import { useEffect } from 'react';
-
-let lastTooltipTime = 0;
-
 function Node({
   position,
   label,
   size,
   hoverable,
-  visibleDistance,
   isBlue
 }: {
   position: [number, number, number];
   label: string;
   size: number;
   hoverable: boolean;
-  visibleDistance: number;
   isBlue: boolean;
 }) {
   const ref = useRef<THREE.Mesh>(null);
@@ -191,7 +183,6 @@ function NodeGroup({ size = 0.14 }: { size?: number }) {
   return <>{nodes.map((node, i) => <Node key={i} {...node} />)}</>;
 }
 
-import { useCallback } from 'react';
 function AutoRotate({ children }: { children: React.ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   const isDragging = useRef(false);
@@ -238,9 +229,20 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
   );
 }
 
+const DragContext = createContext<{ isDragging: boolean }>({ isDragging: false });
+
 export default function GrokGalaxy() {
   return (
     <div className="relative w-full h-[500px] md:h-screen">
+      {/* Particles background */}
+      <Particles
+        className="absolute inset-0 w-full h-full z-0 hidden xl:block"
+        color="#38bdf8"
+        quantity={90}
+        size={0.7}
+        staticity={60}
+        ease={60}
+      />
       <div className="w-full h-full relative z-10 rounded-xl overflow-visible">
         <Canvas camera={{ position: [0, 0, 20], fov: 60 }} className="w-full h-full">
           <ambientLight intensity={1} />
