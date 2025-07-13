@@ -145,7 +145,7 @@
 }
 
 .heading-2 {
-  @apply text-2xl md:text-3xl xl:text-4xl font-medium select-none leading-none tracking-tight;
+  @apply text-2xl font-medium md:text-3xl xl:text-4xl select-none leading-none tracking-tight;
 }
 
 .subtitle-1 {
@@ -171,4 +171,9 @@
 .heading-gradient-grey {
   @apply bg-gradient-to-r from-neutral-700 via-neutral-700 to-black text-transparent bg-clip-text;
   filter: drop-shadow(0 16px 16px rgba(0,0,0,0.24));
+}
+
+/* Utility for mono numbers in Why Ada section */
+.number-mono {
+  @apply font-mono font-normal text-2xl md:text-3xl xl:text-4xl leading-none antialiased;
 }
