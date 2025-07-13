@@ -1,10 +1,13 @@
 import NavBar from "@/components/navbar";
 import Footer from "@/components/footer";
 import GrokGalaxy from "@/components/grok-galaxy";
+import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 
 import { HeroHeadings } from "@/components/HeroHeadings";
 import { HeroGlassCard } from "@/components/HeroGlassCard";
 import WhyAdaNumbers from "@/components/why-ada-numbers";
+import { Button } from "@/components/ui/button";
+import { ArrowRightIcon } from "lucide-react";
 
 export default function Home() {
   return (
@@ -21,8 +24,22 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Flickering Grid with 24px and 16px on mobile margin for both top and bottom */}
+        <div className="w-full my-4 lg:my-6">
+          <FlickeringGrid
+            squareSize={2}
+            gridGap={4}
+            flickerChance={0.2}
+            color="rgb(115, 115, 115)"
+            width={undefined}
+            height={24}
+            maxOpacity={0.4}
+            className="w-full"
+          />
+        </div>
+
         {/* W H Y   A D A   S E C T I O N */}
-        <section className="relative flex flex-col items-center bg-neutral-900 justify-center w-full max-w-[1480px] px-4 py-8 lg:px-8 lg:py-12">
+        <section className="relative flex flex-col items-center bg-neutral-900 justify-center w-full h-fit max-w-[1480px] px-4 py-8 lg:px-8 lg:py-12">
 
           {/* Top Row */}
           <div className="flex flex-row items-start md:items-center justify-between w-full gap-6 mb-4 lg:mb-8">
@@ -33,14 +50,43 @@ export default function Home() {
             <WhyAdaNumbers />
           </div>
 
-
+          {/* 4 Point Cards */}
 
         </section>
         {/* P E R F O R M A N C E   S E C T I O N */}
         {/* L A T E S T   R E S E A R C H   S E C T I O N */}
         {/* M E M B E R S H I P   A N D   P R I C I N G   S E C T I O N */}
         {/* F A Q   S E C T I O N */}
+
+        {/* Flickering Grid with 24px and 16px on mobile margin for both top and bottom */}
+        <div className="w-full my-4 lg:my-6">
+          <FlickeringGrid
+            squareSize={2}
+            gridGap={4}
+            flickerChance={0.2}
+            color="rgb(115, 115, 115)"
+            width={undefined}
+            height={24}
+            maxOpacity={0.4}
+            className="w-full"
+          />
+        </div>
+
         {/* B O T T O M   C T A   S E C T I O N */}
+        <div className="flex flex-col items-center justify-center w-full max-w-[1480px] h-fit px-4 py-8 lg:px-8 lg:py-12">
+          <h1 className="heading-1 text-white text-center mb-2 md:mb-4">
+            Invest with Intelligence
+          </h1>
+          <p className="subtitle-1 w-full text-neutral-500 max-w-[280px] md:max-w-none text-center mb-4 md:mb-6">
+            Join us to gain access to our resarch and proprietary strategies.
+          </p>
+          <Button variant="default" className="shadow-md w-full max-w-[320px] md:w-fit">
+            APPLY TO JOIN
+            <ArrowRightIcon 
+              size={14}
+            />
+          </Button>
+        </div>
       </main>
       <Footer />
     </>
