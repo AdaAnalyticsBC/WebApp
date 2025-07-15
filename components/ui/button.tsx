@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { useCursorHover } from "@/components/custom-cursor"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-1 whitespace-nowrap text-[10px] font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-1 whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
@@ -18,12 +18,12 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 transition-colors duration-300 rounded-full",
         outline:
-          "border-2 border-neutral-300 flex items-center justify-center button-2 bg-transparent transition-colors duration-300 rounded-full pl-3 pr-2 py-1.5 md:py-2 gap-1.5 md:gap-6",
+          "border-1 border-neutral-500 flex items-center justify-center bg-transparent transition-colors duration-300 rounded-full pl-3 pr-2 py-1.5 md:py-2 gap-1.5 md:gap-6",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 transition-colors duration-300 rounded-full",
         ghost:
           "hover:bg-accent dark:hover:bg-accent/50 transition-colors duration-300 rounded-full",
-        link: "button-2 underline-offset-4 transition-colors duration-300 bg-transparent rounded-none",
+        link: "transition-colors duration-300",
         none: "p-0",
       },
     },
@@ -83,24 +83,14 @@ function Button({
         >
           <Comp
             data-slot="button"
-            className={cn(buttonVariants({ variant, className }), "relative overflow-hidden group")}
+            className={cn(buttonVariants({ variant, className }))}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             {...props}
           >
-            <span className="relative z-10 flex items-center gap-2 flex-row">{props.children}</span>
-            {mounted && (
-              <motion.span
-                className="absolute left-0 bottom-[-2px] h-[1px] w-full bg-current origin-left"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: hovered ? 1 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                style={{ transformOrigin: "left" }}
-                aria-hidden="true"
-              />
-            )}
+            {props.children}
           </Comp>
         </motion.div>
       )

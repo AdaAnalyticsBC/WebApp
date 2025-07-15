@@ -52,7 +52,7 @@ function ResearchCard({ article, featured = false }: ResearchCardProps) {
     >
       {/* Image Section */}
       <div className={`relative w-full rounded-lg overflow-hidden ${
-        featured ? 'h-[320px] lg:h-[400px]' : 'h-[160px] lg:h-[160px]'
+        featured ? 'h-[384px] lg:h-[600px]' : 'h-[180px] lg:h-[224px]'
       }`}>
         <svg 
           className="w-full h-full transition-transform duration-300 group-hover:scale-105" 

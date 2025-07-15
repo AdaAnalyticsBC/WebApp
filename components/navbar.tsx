@@ -7,7 +7,7 @@ import { ArrowRightIcon, LockIcon } from "lucide-react";
 
 export default function NavBar() {
   return (
-    <nav className="flex sticky top-0 z-40 px-3 lg:px-6 pt-3 lg:pt-4 pb-2 lg:pb-3 justify-between items-center self-stretch bg-background/80 backdrop-blur-lg">
+    <nav className="flex sticky top-0 z-40 px-3 lg:px-6 pt-3 lg:pt-4 pb-2 lg:pb-3 justify-between items-center self-stretch bg-white/80 backdrop-blur-lg">
 
 
       {/* LOGO */}
@@ -26,7 +26,7 @@ export default function NavBar() {
 
         {/* Login Button */}
         <Link href="/login">
-          <Button variant="link" className="w-fit h-fit pl-3 pr-2 py-1.5 text-[10px] font-semibold text-foreground rounded-full gap-1">
+          <Button variant="link" className="w-fit h-fit pl-3 pr-2 py-1.5 button-2 gap-1">
             LOG IN
             <LockIcon size={14} />
           </Button>

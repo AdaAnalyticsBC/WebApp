@@ -169,11 +169,15 @@
 }
 
 .button-1 {
-  @apply text-[11px] font-bold leading-tight text-white tracking-tight select-none antialiased align-middle
+  @apply text-[11px] font-bold leading-none text-white tracking-tight select-none antialiased align-middle
 }
 
 .button-2 {
-  @apply text-[11px] font-bold leading-tight text-primary tracking-tight select-none
+  @apply text-[11px] font-bold leading-none text-primary tracking-tight select-none
+}
+
+.button-3 {
+  @apply text-[11px] font-bold leading-none text-neutral-400 tracking-tight select-none antialiased align-middle
 }
 
 .heading-gradient-black {
@@ -189,4 +193,9 @@
 /* Utility for mono numbers in Why Ada section */
 .number-mono {
   @apply font-mono font-normal text-2xl md:text-3xl xl:text-4xl leading-none antialiased;
+}
+
+/* Utility for radial gradients */
+.bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
 }

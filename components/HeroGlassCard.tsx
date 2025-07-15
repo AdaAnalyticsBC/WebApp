@@ -17,7 +17,7 @@ export function HeroGlassCard() {
             size={14}
           />
         </Button>
-        <Button variant="link" className="">
+        <Button variant="link" className="button-2">
           EXPLORE STRATEGIES
           <ChevronFirst
             size={14}

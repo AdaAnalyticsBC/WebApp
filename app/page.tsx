@@ -7,6 +7,7 @@ import { DarkAreaDetector } from "@/components/dark-area-detector";
 import { HeroHeadings } from "@/components/HeroHeadings";
 import { HeroGlassCard } from "@/components/HeroGlassCard";
 import WhyAdaNumbers from "@/components/why-ada-numbers";
+import WhyAdaCards from "@/components/why-ada-cards";
 import FAQQuestions from "@/components/faq-questions";
 import PricingSection from "@/components/pricing-section";
 import ResearchSection from "@/components/research-section";
@@ -44,12 +45,10 @@ export default function Home() {
 
         {/* W H Y   A D A  &   P E R F O R M A N C E   S E C T I O N */}
         <DarkAreaDetector isDark={true}>
-          <section className="relative flex flex-col items-center bg-neutral-900 justify-center w-full h-fit">
+          <section className="relative flex flex-col items-center bg-neutral-900 justify-center px-4 py-8 lg:px-8 lg:py-12 gap-8 w-full h-fit">
 
-            {/* Container for both*/}
-            <div className="flex flex-col lg:flex-row items-center justify-center w-full h-fit max-w-[1480px] px-4 py-8 lg:px-8 lg:py-12">
-              {/* Why Ada Section */}
-
+            {/* Container */}
+            <div className="flex flex-col items-center justify-center w-full h-fit gap-8 max-w-[1480px]">
               {/* Top Row */}
               <div className="flex flex-row items-start md:items-center justify-between w-full gap-6 mb-4 lg:mb-8">
                 <div className="flex flex-col items-start justify-center w-fit gap-3">
@@ -61,10 +60,15 @@ export default function Home() {
               </div>
 
               {/* 4 Point Cards */}
+              <WhyAdaCards />
             </div>
 
           </section>
           {/* P E R F O R M A N C E   S E C T I O N */}
+          <section>
+            
+          </section>
+
         </DarkAreaDetector>
         {/* L A T E S T   R E S E A R C H   S E C T I O N */}
         <ResearchSection />
@@ -95,7 +99,7 @@ export default function Home() {
                 <p className="subtitle-1 w-full text-neutral-500 text-center md:text-left mb-4">
                   Our team will answer your questions we ensure a quick response.
                 </p>
-                <Button variant="outline" className="w-full max-w-[320px] md:w-fit">
+                <Button variant="outline" className="w-full button-2 max-w-[320px] md:w-fit">
                   CONTACT OUR TEAM
                   <MessagesSquare 
                     size={14}
