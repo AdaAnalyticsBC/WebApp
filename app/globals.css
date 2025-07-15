@@ -141,15 +141,27 @@
 /* T E X T   S T Y L E S */
 
 .heading-1 {
-  @apply text-4xl md:text-6xl xl:text-7xl font-bold leading-none tracking-tight text-center dark:text-white text-black select-none;
+  @apply text-4xl md:text-6xl xl:text-7xl font-bold leading-none tracking-tight select-none;
 }
 
 .heading-2 {
-  @apply text-2xl font-medium md:text-3xl xl:text-4xl select-none leading-none tracking-tight;
+  @apply text-2xl font-bold md:text-3xl xl:text-4xl select-none leading-none tracking-tight;
+}
+
+.heading-3 {
+  @apply text-xl font-bold select-none leading-tight tracking-tight;
+}
+
+.heading-4 {
+  @apply text-lg font-bold select-none leading-tight tracking-tight;
 }
 
 .subtitle-1 {
-  @apply text-sm md:text-base text-muted-foreground font-medium text-center leading-tight tracking-tight select-none antialiased align-middle
+  @apply text-sm md:text-base text-muted-foreground font-medium leading-tight tracking-tight select-none antialiased
+}
+
+.paragraph-1{
+  @apply text-sm md:text-base text-muted-foreground font-normal leading-tight tracking-tight antialiased;
 }
 
 .tag-1 {
@@ -168,6 +180,7 @@
   @apply bg-gradient-to-r from-black via-neutral-700 to-neutral-700 text-transparent bg-clip-text;
   filter: drop-shadow(0 16px 16px rgba(0,0,0,0.24));
 }
+
 .heading-gradient-grey {
   @apply bg-gradient-to-r from-neutral-700 via-neutral-700 to-black text-transparent bg-clip-text;
   filter: drop-shadow(0 16px 16px rgba(0,0,0,0.24));

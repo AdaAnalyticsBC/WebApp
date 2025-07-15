@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { useSpring, a } from '@react-spring/three';
 import { motion } from 'motion/react';
 import { Particles } from "./magicui/particles";
+import { useCursor } from './cursor-context';
 
 const questionPool = [
   "What’s the best way to hedge against inflation in 2024?",
@@ -187,19 +188,28 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   const isDragging = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
+  const { setCursorState, setCursorText, setIsDragging } = useCursor();
 
   // Drag handlers
   const onPointerDown = useCallback((e: any) => {
     isDragging.current = true;
     last.current = { x: e.clientX, y: e.clientY };
+    setCursorState('move'); // Keep it as 'move' state to maintain blue ring
+    setCursorText('Move');
+    setIsDragging(true);
     // Prevent canvas drag select
     e.target.setPointerCapture?.(e.pointerId);
-  }, []);
+  }, [setCursorState, setCursorText, setIsDragging]);
+  
   const onPointerUp = useCallback((e: any) => {
     isDragging.current = false;
     last.current = null;
+    setCursorState('move');
+    setCursorText('Move');
+    setIsDragging(false);
     e.target.releasePointerCapture?.(e.pointerId);
-  }, []);
+  }, [setCursorState, setCursorText, setIsDragging]);
+  
   const onPointerMove = useCallback((e: any) => {
     if (!isDragging.current || !last.current || !ref.current) return;
     const dx = e.clientX - last.current.x;
@@ -208,6 +218,20 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
     ref.current.rotation.x += dy * 0.0025;
     last.current = { x: e.clientX, y: e.clientY };
   }, []);
+
+  const onPointerEnter = useCallback(() => {
+    if (!isDragging.current) {
+      setCursorState('move');
+      setCursorText('Move');
+    }
+  }, [setCursorState, setCursorText]);
+
+  const onPointerLeave = useCallback(() => {
+    if (!isDragging.current) {
+      setCursorState('default');
+      setCursorText('');
+    }
+  }, [setCursorState, setCursorText]);
 
   useFrame((_, delta) => {
     if (!isDragging.current && ref.current) {
@@ -222,6 +246,8 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerMove={onPointerMove}
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
       >
         {children}
       </group>

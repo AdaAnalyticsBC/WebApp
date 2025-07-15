@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
+import { useCursorHover } from "@/components/custom-cursor"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-1 whitespace-nowrap text-[10px] font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -13,11 +14,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary button-1 shadow-xs hover:bg-primary/90 transition-colors duration-300 rounded-full px-3 pr-2 py-1.5 md:py-2 gap-1.5 md:gap-6",
+          "bg-primary button-1 shadow-xs hover:bg-primary/90 transition-colors duration-300 rounded-full pl-3 pr-2 py-1.5 md:py-2 gap-1.5 md:gap-6",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 transition-colors duration-300 rounded-full",
         outline:
-          "border button-2 bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-colors duration-300 rounded-full",
+          "border-2 border-neutral-300 flex items-center justify-center button-2 bg-transparent transition-colors duration-300 rounded-full pl-3 pr-2 py-1.5 md:py-2 gap-1.5 md:gap-6",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 transition-colors duration-300 rounded-full",
         ghost:
@@ -46,43 +47,82 @@ function Button({
   // Only animate underline after mount (client-side)
   const [mounted, setMounted] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const [isPressed, setIsPressed] = useState(false)
+  const { onMouseEnter, onMouseLeave } = useCursorHover()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  if (variant === "link") {
+      const handleMouseEnter = () => {
+      setHovered(true)
+      // Only default and destructive variants have dark backgrounds and need white dots
+      const isDarkVariant = variant === 'default' || variant === 'destructive'
+      onMouseEnter('hover', '', undefined, isDarkVariant)
+    }
+
+    const handleMouseLeave = () => {
+      setHovered(false)
+      setIsPressed(false) // Reset pressed state when leaving button
+      onMouseLeave()
+    }
+
+    const handleMouseDown = () => {
+      setIsPressed(true)
+    }
+
+    const handleMouseUp = () => {
+      setIsPressed(false)
+    }
+
+      if (variant === "link") {
+      return (
+        <motion.div
+          animate={{ scale: isPressed ? 0.95 : 1 }}
+          transition={{ duration: 0.1, ease: "easeOut" }}
+        >
+          <Comp
+            data-slot="button"
+            className={cn(buttonVariants({ variant, className }), "relative overflow-hidden group")}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            {...props}
+          >
+            <span className="relative z-10 flex items-center gap-2 flex-row">{props.children}</span>
+            {mounted && (
+              <motion.span
+                className="absolute left-0 bottom-[-2px] h-[1px] w-full bg-current origin-left"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: hovered ? 1 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                style={{ transformOrigin: "left" }}
+                aria-hidden="true"
+              />
+            )}
+          </Comp>
+        </motion.div>
+      )
+    }
     return (
-      <Comp
-        data-slot="button"
-        className={cn(buttonVariants({ variant, className }), "relative overflow-hidden group")}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        {...props}
+      <motion.div
+        animate={{ scale: isPressed ? 0.95 : 1 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
       >
-        <span className="relative z-10 flex items-center gap-2 flex-row">{props.children}</span>
-        {mounted && (
-          <motion.span
-            className="absolute left-0 bottom-[-2px] h-[1px] w-full bg-current origin-left"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: hovered ? 1 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            style={{ transformOrigin: "left" }}
-            aria-hidden="true"
-          />
-        )}
-      </Comp>
+        <Comp
+          data-slot="button"
+          className={cn(buttonVariants({ variant, className }))}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          {...props}
+        >
+          {props.children}
+        </Comp>
+      </motion.div>
     )
-  }
-  return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, className }))}
-      {...props}
-    >
-      {props.children}
-    </Comp>
-  )
 }
 
 export { Button, buttonVariants }

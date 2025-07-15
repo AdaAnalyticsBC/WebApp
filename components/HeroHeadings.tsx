@@ -35,15 +35,15 @@ export function HeroHeadings() {
     <div className="flex flex-col items-center w-full overflow-visible relative gap-1 z-10">
       <motion.h1
         style={{ x: leftX, position: "relative", zIndex: 20, opacity: mounted ? 1 : 0 }}
-        className="heading-gradient-black heading-1 w-fit text-center font-bold select-none text-[clamp(2rem,8vw,3.5rem)] leading-tight tracking-tight"
+        className="heading-gradient-black heading-1 w-fit text-center text-[clamp(2rem,8vw,3.5rem)]"
       >
         We Turn Information
       </motion.h1>
       <motion.h1
         style={{ x: rightX, position: "relative", zIndex: 20, opacity: mounted ? 1 : 0 }}
-        className="heading-gradient-grey heading-1 w-fit text-center font-bold select-none text-[clamp(2rem,8vw,3.5rem)] leading-tight tracking-tight"
+        className="heading-gradient-grey heading-1 w-fit text-center text-[clamp(2rem,8vw,3.5rem)]"
       >
-        Into Performance.
+        Into Performance
       </motion.h1>
     </div>
   );
