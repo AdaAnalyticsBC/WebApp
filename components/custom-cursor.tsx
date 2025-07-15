@@ -1,19 +1,52 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCursor } from './cursor-context';
 
 export const CustomCursor: React.FC = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState(true); // Start visible
-  const { cursorState, cursorText, isOnDarkBackground, customRingColor, isPressed, setIsPressed, isDarkButton } = useCursor();
+  const [isVisible, setIsVisible] = useState(true);
+  const { cursorState, cursorText, isOnDarkBackground, customRingColor, isPressed, setIsPressed, isDarkButton, setIsOnDarkBackground } = useCursor();
   const cursorRef = useRef<HTMLDivElement>(null);
+  const lastDarkCheck = useRef<number>(0);
+  const rafId = useRef<number>(0);
+
+  // Throttled dark element detection - only check every 100ms for performance
+  const checkDarkElement = useCallback((x: number, y: number) => {
+    const now = Date.now();
+    if (now - lastDarkCheck.current < 100) return; // Throttle to 100ms
+    lastDarkCheck.current = now;
+
+    const elementUnderCursor = document.elementFromPoint(x, y);
+    if (!elementUnderCursor) return;
+
+    // Optimized dark element detection - check closest first (most likely)
+    const isDarkPortalElement = (
+      elementUnderCursor.closest('[data-radix-select-content]') ||
+      elementUnderCursor.closest('[data-radix-hover-card-content]') ||
+      elementUnderCursor.closest('.bg-neutral-900') ||
+      elementUnderCursor.closest('.bg-neutral-800') ||
+      elementUnderCursor.closest('.bg-neutral-700')
+    );
+
+    if (isDarkPortalElement) {
+      setIsOnDarkBackground(true);
+    }
+  }, [setIsOnDarkBackground]);
 
   useEffect(() => {
     const updateMousePosition = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-      setIsVisible(true);
+      // Use requestAnimationFrame for smooth updates
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
+      
+      rafId.current = requestAnimationFrame(() => {
+        setMousePosition({ x: e.clientX, y: e.clientY });
+        setIsVisible(true);
+        checkDarkElement(e.clientX, e.clientY);
+      });
     };
 
     const handleMouseLeave = () => {
@@ -32,21 +65,24 @@ export const CustomCursor: React.FC = () => {
       setIsPressed(false);
     };
 
-    // Use capture phase to ensure we catch events even when elements have user-select: none
-    document.addEventListener('mousemove', updateMousePosition, { capture: true });
-    document.addEventListener('mouseleave', handleMouseLeave, { capture: true });
-    document.addEventListener('mouseenter', handleMouseEnter, { capture: true });
-    document.addEventListener('mousedown', handleMouseDown, { capture: true });
-    document.addEventListener('mouseup', handleMouseUp, { capture: true });
+    // Use passive listeners for better performance
+    document.addEventListener('mousemove', updateMousePosition, { capture: true, passive: true });
+    document.addEventListener('mouseleave', handleMouseLeave, { capture: true, passive: true });
+    document.addEventListener('mouseenter', handleMouseEnter, { capture: true, passive: true });
+    document.addEventListener('mousedown', handleMouseDown, { capture: true, passive: true });
+    document.addEventListener('mouseup', handleMouseUp, { capture: true, passive: true });
 
     return () => {
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
       document.removeEventListener('mousemove', updateMousePosition, { capture: true });
       document.removeEventListener('mouseleave', handleMouseLeave, { capture: true });
       document.removeEventListener('mouseenter', handleMouseEnter, { capture: true });
       document.removeEventListener('mousedown', handleMouseDown, { capture: true });
       document.removeEventListener('mouseup', handleMouseUp, { capture: true });
     };
-  }, [setIsPressed]);
+  }, [setIsPressed, checkDarkElement]);
 
   // Hide default cursor and ensure our custom cursor works everywhere
   useEffect(() => {
@@ -82,7 +118,7 @@ export const CustomCursor: React.FC = () => {
       case 'move':
         return 80;
       default:
-        return 12; // Simple 8x8 dot for default
+        return 12;
     }
   };
 
@@ -95,7 +131,7 @@ export const CustomCursor: React.FC = () => {
       case 'move':
         return 10;
       default:
-        return 12; // Simple 8x8 dot for default
+        return 12;
     }
   };
 
@@ -110,6 +146,7 @@ export const CustomCursor: React.FC = () => {
           style={{
             left: mousePosition.x,
             top: mousePosition.y,
+            transform: 'translate3d(0, 0, 0)', // Force GPU acceleration
           }}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ 
@@ -130,6 +167,7 @@ export const CustomCursor: React.FC = () => {
                 height: getDotSize(),
                 left: -getDotSize() / 2,
                 top: -getDotSize() / 2,
+                transform: 'translate3d(0, 0, 0)', // Force GPU acceleration
               }}
               initial={{ scale: 0.8, opacity: 0.8 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -148,6 +186,7 @@ export const CustomCursor: React.FC = () => {
                   height: getCursorSize(),
                   left: -getCursorSize() / 2,
                   top: -getCursorSize() / 2,
+                  transform: 'translate3d(0, 0, 0)', // Force GPU acceleration
                   ...(customRingColor && { borderColor: customRingColor }),
                 }}
                 initial={{ scale: 0.8, opacity: 0.6 }}
@@ -173,6 +212,7 @@ export const CustomCursor: React.FC = () => {
                   height: getDotSize(),
                   left: -getDotSize() / 2,
                   top: -getDotSize() / 2,
+                  transform: 'translate3d(0, 0, 0)', // Force GPU acceleration
                 }}
                 initial={{ scale: 1, opacity: 0.8 }}
                 animate={{

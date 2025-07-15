@@ -195,6 +195,10 @@
   @apply font-mono font-normal text-2xl md:text-3xl xl:text-4xl leading-none antialiased;
 }
 
+.number-mono-2 {
+  @apply font-mono font-normal text-base leading-none antialiased;
+}
+
 /* Utility for radial gradients */
 .bg-gradient-radial {
   background-image: radial-gradient(var(--tw-gradient-stops));

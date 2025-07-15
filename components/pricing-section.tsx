@@ -3,7 +3,6 @@
 import { useState } from "react";
 import PricingToggle from "./pricing-toggle";
 import FeeCalculator from "./fee-calculator";
-import NumberFlow from "@number-flow/react";
 
 export default function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -38,11 +37,9 @@ export default function PricingSection() {
               <div className="mb-8">
                 <div className="flex items-baseline gap-1 mb-4">
                   <span className="text-2xl font-bold text-white">$</span>
-                  <NumberFlow
-                    value={clientFee}
-                    className="text-4xl md:text-5xl font-mono text-white"
-                    format={{ maximumFractionDigits: 0 }}
-                  />
+                  <span className="text-4xl md:text-5xl font-mono text-white">
+                    {clientFee.toLocaleString()}
+                  </span>
                   <span className="text-lg text-neutral-400">
                     {clientFeePeriod}
                   </span>
@@ -70,11 +67,7 @@ export default function PricingSection() {
               <div>
                 <h3 className="heading-3 text-white mb-4">Management Fee (Annual)</h3>
                 <div className="flex items-baseline gap-1 mb-4">
-                  <NumberFlow
-                    value={0.12}
-                    className="text-4xl md:text-5xl font-mono text-white"
-                    format={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }}
-                  />
+                  <span className="text-4xl md:text-5xl font-mono text-white">0.12</span>
                   <span className="text-2xl text-white">%</span>
                   <span className="text-sm text-neutral-400 ml-2">/AUM</span>
                 </div>

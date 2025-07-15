@@ -10,7 +10,7 @@ import { Particles } from "./magicui/particles";
 import { useCursor } from './cursor-context';
 
 const questionPool = [
-  "What’s the best way to hedge against inflation in 2024?",
+  "What's the best way to hedge against inflation in 2024?",
   "How do ETFs compare to mutual funds for long-term growth?",
   "What are the risks of algorithmic trading for retail investors?",
   "How does AI impact modern portfolio management?",
@@ -20,6 +20,8 @@ const questionPool = [
   "Why is TSLA so volatile this month?",
   "What are the best dividend stocks for 2024?",
   "Redditors are bullish on QQQ.",
+  "How does sector rotation affect portfolio performance?",
+  "What's the impact of Fed policy on small cap stocks?",
 ];
 
 // Deterministic seeded random number generator
@@ -32,19 +34,19 @@ function mulberry32(seed: number) {
   }
 }
 
-// Organic "galaxy" style node distribution
-function getHardcodedNodes(size = 0.14) {
+// Optimized node distribution with connection lines for all nodes
+function getOptimizedNodes(size = 0.14) {
   const nodes = [];
   const radius = 7;
-  const total = 160;
+  const total = 60; // Reduced further for better performance
   const spreadFactor = 0.5;
+  const interactiveCount = 10; // Increased interactive nodes
 
   // Use a fixed seed for deterministic layout
   const rand = mulberry32(42);
 
-  // Make every 6th node blue, rest grey
-  let blueIndex = 0;
-  for (let i = 0; i < total; i++) {
+  // First, create interactive blue nodes
+  for (let i = 0; i < interactiveCount; i++) {
     const theta = rand() * Math.PI * 2;
     const phi = Math.acos(2 * rand() - 1);
     const r = radius * (1 + rand() * spreadFactor);
@@ -53,133 +55,262 @@ function getHardcodedNodes(size = 0.14) {
     const y = r * Math.sin(phi) * Math.sin(theta);
     const z = r * Math.cos(phi);
 
-    const isBlue = i % 6 === 0;
     nodes.push({
       position: [x, y, z] as [number, number, number],
-      label: isBlue ? questionPool[blueIndex++ % questionPool.length] : "",
-      size, // use the parameter
-      hoverable: isBlue,
-      isBlue
+      label: questionPool[i % questionPool.length],
+      size,
+      hoverable: true,
+      isBlue: true,
+      isInteractive: true
+    });
+  }
+
+  // Then create static grey nodes
+  for (let i = interactiveCount; i < total; i++) {
+    const theta = rand() * Math.PI * 2;
+    const phi = Math.acos(2 * rand() - 1);
+    const r = radius * (1 + rand() * spreadFactor);
+
+    const x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.sin(phi) * Math.sin(theta);
+    const z = r * Math.cos(phi);
+
+    nodes.push({
+      position: [x, y, z] as [number, number, number],
+      label: "",
+      size,
+      hoverable: false,
+      isBlue: false,
+      isInteractive: false
     });
   }
 
   return nodes;
 }
 
-function Node({
+// Connection lines component for all nodes
+function ConnectionLines({ nodes }: { nodes: any[] }) {
+  const linesRef = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    if (!linesRef.current) return;
+
+    // Clear existing lines
+    while (linesRef.current.children.length > 0) {
+      linesRef.current.remove(linesRef.current.children[0]);
+    }
+
+    // Create lines for all nodes
+    nodes.forEach((node) => {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array([
+        node.position[0], node.position[1], node.position[2], // node position
+        0, 0, 0 // center
+      ]);
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      
+      const material = new THREE.LineBasicMaterial({ 
+        color: '#DDD', 
+        transparent: true, 
+        opacity: 0.3 
+      });
+      
+      const line = new THREE.Line(geometry, material);
+      if (linesRef.current) {
+        linesRef.current.add(line);
+      }
+    });
+  }, [nodes]);
+
+  return <group ref={linesRef} />;
+}
+
+// Optimized static node rendering using InstancedMesh (without lines since they're separate now)
+function StaticNodes({ nodes }: { nodes: any[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const staticNodes = useMemo(() => nodes.filter(node => !node.isInteractive), [nodes]);
+
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    const mesh = meshRef.current;
+    const tempObject = new THREE.Object3D();
+    
+    staticNodes.forEach((node, i) => {
+      tempObject.position.set(node.position[0], node.position[1], node.position[2]);
+      tempObject.rotation.set(0.2, 0, 0.5);
+      tempObject.updateMatrix();
+      mesh.setMatrixAt(i, tempObject.matrix);
+    });
+    
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [staticNodes]);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, staticNodes.length]}
+      position={[0, 0, 0]}
+    >
+      <boxGeometry args={[0.14, 0.14, 0.05]} />
+      <meshStandardMaterial
+        color="#FAFAFA"
+        emissive="#FAFAFA"
+        emissiveIntensity={0}
+      />
+    </instancedMesh>
+  );
+}
+
+// Improved interactive node with better hover detection
+function InteractiveNode({
   position,
   size,
-  hoverable,
-  isBlue
+  label
 }: {
   position: [number, number, number];
   size: number;
-  hoverable: boolean;
-  isBlue: boolean;
+  label: string;
 }) {
   const ref = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-
-  // Pick a random finance question/info for blue nodes
-  const [financeInfo] = useState(() => questionPool[Math.floor(Math.random() * questionPool.length)]);
-
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Memoize mobile check
   useEffect(() => {
     const check = () => setIsMobileOrTablet(window.innerWidth < 800);
     check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    const debouncedCheck = debounce(check, 100);
+    window.addEventListener('resize', debouncedCheck);
+    return () => window.removeEventListener('resize', debouncedCheck);
   }, []);
 
-  useFrame(() => {
-    // Always face the camera in 2D (no rotation)
+  // Static rotation instead of useFrame for better performance
+  useEffect(() => {
     if (ref.current) {
       ref.current.rotation.set(0.2, 0, 0.5);
     }
-  });
+  }, []);
 
-  // Force all visibleDistance < 7 nodes to always be bright sky blue
-  const color = isBlue ? '#38bdf8' : '#FAFAFA';
-
-  const handlePointerOver = () => {
-    if (!hoverable || isMobileOrTablet) return;
+  // Improved hover handling with debouncing to prevent flickering
+  const handlePointerOver = useCallback(() => {
+    if (isMobileOrTablet) return;
+    
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
     setHovered(true);
     setShowTooltip(true);
-  };
+  }, [isMobileOrTablet]);
 
-  const handlePointerOut = () => {
-    if (!hoverable || isMobileOrTablet) return;
-    setHovered(false);
-    setShowTooltip(false);
-  };
+  const handlePointerOut = useCallback(() => {
+    if (isMobileOrTablet) return;
+    
+    // Add small delay before hiding to prevent flickering
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHovered(false);
+      setShowTooltip(false);
+    }, 50);
+  }, [isMobileOrTablet]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const { scale } = useSpring({
     scale: hovered ? 1.5 : 1,
-    config: { tension: 170, friction: 18 }
+    config: { tension: 300, friction: 30 }
   });
 
   return (
     <>
-      {hoverable && (
-        <mesh
-          position={position}
-          rotation={[0, 0, 0]}
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
-        >
-          <boxGeometry args={[2, 2, 0.1]} />
-          <meshBasicMaterial transparent opacity={0} />
-        </mesh>
-      )}
+      {/* Larger invisible interaction area to prevent flickering */}
+      <mesh
+        position={position}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+      >
+        <boxGeometry args={[3, 3, 3]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
 
+      {/* Visible node */}
       <a.mesh
         ref={ref}
         position={position}
         scale={scale}
-        rotation={[0, 0, 0]}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
       >
-        <boxGeometry args={[size, size, 0.05]} />
+        <boxGeometry args={[size * 1.2, size * 1.2, 0.05]} />
         <meshStandardMaterial
-          color={color}
-          emissive={isBlue ? '#38bdf8' : '#FAFAFA'}
-          emissiveIntensity={isBlue ? 0.4 : 0}
+          color="#38bdf8"
+          emissive="#38bdf8"
+          emissiveIntensity={0.4}
         />
         {showTooltip && (
-          <Html position={[0, size * 1.5, 0]} center distanceFactor={10} zIndexRange={[isBlue ? 50 : 20, 0]}>
+          <Html 
+            position={[0, size * 2, 0]} 
+            center 
+            distanceFactor={10} 
+            zIndexRange={[50, 0]}
+            pointerEvents="none"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.18, ease: "easeInOut" }}
-              className={`${isBlue ? "z-50" : "z-20"} text-[14px] font-bold text-foreground bg-neutral-100 px-3 py-2 rounded-md backdrop-blur-lg shadow-lg text-center whitespace-nowrap select-none`}
-              style={{ zIndex: isBlue ? 50 : 20, position: 'relative' }}
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="z-50 text-[13px] w-fit font-bold text-foreground bg-neutral-100 px-3 py-2 rounded-md backdrop-blur-lg shadow-lg text-center whitespace-nowrap select-none pointer-events-none"
+              style={{ pointerEvents: 'none' }}
             >
-              {financeInfo}
+              {label}
             </motion.div>
           </Html>
         )}
       </a.mesh>
-
-      <line>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[new Float32Array([...position, 0, 0, 0]), 3]}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="#FAFAFA" linewidth={1} />
-      </line>
     </>
   );
 }
 
+// Debounce utility
+function debounce(func: Function, wait: number) {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 function NodeGroup({ size = 0.14 }: { size?: number }) {
-  const nodes = useMemo(() => getHardcodedNodes(size), [size]);
-  return <>{nodes.map((node, i) => <Node key={i} {...node} />)}</>;
+  const nodes = useMemo(() => getOptimizedNodes(size), [size]);
+  const interactiveNodes = useMemo(() => nodes.filter(node => node.isInteractive), [nodes]);
+
+  return (
+    <>
+      <ConnectionLines nodes={nodes} />
+      <StaticNodes nodes={nodes} />
+      {interactiveNodes.map((node, i) => (
+        <InteractiveNode 
+          key={i} 
+          position={node.position}
+          size={node.size}
+          label={node.label}
+        />
+      ))}
+    </>
+  );
 }
 
 function AutoRotate({ children }: { children: React.ReactNode }) {
@@ -188,14 +319,13 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
   const last = useRef<{ x: number; y: number } | null>(null);
   const { setCursorState, setCursorText, setIsDragging } = useCursor();
 
-  // Drag handlers
+  // Optimized drag handlers with useCallback
   const onPointerDown = useCallback((e: PointerEvent) => {
     isDragging.current = true;
     last.current = { x: e.clientX, y: e.clientY };
-    setCursorState('move'); // Keep it as 'move' state to maintain blue ring
+    setCursorState('move');
     setCursorText('Move');
     setIsDragging(true);
-    // Prevent canvas drag select
     const target = e.target as Element;
     target.setPointerCapture?.(e.pointerId);
   }, [setCursorState, setCursorText, setIsDragging]);
@@ -233,6 +363,7 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
     }
   }, [setCursorState, setCursorText]);
 
+  // Optimized auto-rotation
   useFrame((_, delta) => {
     if (!isDragging.current && ref.current) {
       ref.current.rotation.y += delta * 0.01;
@@ -260,17 +391,21 @@ const DragContext = createContext<{ isDragging: boolean }>({ isDragging: false }
 export default function GrokGalaxy() {
   return (
     <div className="relative w-full h-[500px] md:h-screen">
-      {/* Particles background */}
+      {/* Optimized particles with reduced quantity */}
       <Particles
         className="absolute inset-0 w-full h-full z-0 hidden xl:block"
         color="#38bdf8"
-        quantity={90}
+        quantity={50} // Further reduced for better performance
         size={0.7}
         staticity={60}
         ease={60}
       />
       <div className="w-full h-full relative z-10 rounded-xl overflow-visible">
-        <Canvas camera={{ position: [0, 0, 20], fov: 60 }} className="w-full h-full">
+        <Canvas 
+          camera={{ position: [0, 0, 20], fov: 60 }} 
+          className="w-full h-full"
+          performance={{ min: 0.5 }}
+        >
           <ambientLight intensity={1} />
           <pointLight position={[10, 60, 10]} intensity={0.2} />
           <AutoRotate>

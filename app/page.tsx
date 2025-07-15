@@ -11,6 +11,7 @@ import WhyAdaCards from "@/components/why-ada-cards";
 import FAQQuestions from "@/components/faq-questions";
 import PricingSection from "@/components/pricing-section";
 import ResearchSection from "@/components/research-section";
+import PerformanceCalculator from "@/components/performance-calculator";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon, MessagesSquare } from "lucide-react";
 
@@ -35,10 +36,10 @@ export default function Home() {
             squareSize={2}
             gridGap={4}
             flickerChance={0.5}
-            color="rgb(56, 189, 248)"
+            color="#E5E5E5"
             width={undefined}
             height={24}
-            maxOpacity={0.8}
+            maxOpacity={1}
             className="w-full"
           />
         </div>
@@ -64,10 +65,11 @@ export default function Home() {
             </div>
 
           </section>
+
+          
           {/* P E R F O R M A N C E   S E C T I O N */}
-          <section>
-            
-          </section>
+
+          <PerformanceCalculator />
 
         </DarkAreaDetector>
         {/* L A T E S T   R E S E A R C H   S E C T I O N */}
@@ -121,16 +123,16 @@ export default function Home() {
             squareSize={2}
             gridGap={4}
             flickerChance={0.5}
-            color="rgb(56, 189, 248)"
+            color="#E5E5E5"
             width={undefined}
             height={24}
-            maxOpacity={0.8}
+            maxOpacity={1}
             className="w-full"
           />
         </div>
 
         {/* B O T T O M   C T A   S E C T I O N */}
-        <section className="flex flex-col items-center justify-center w-full max-w-[1480px] h-fit px-4 py-8 lg:px-8 lg:py-12">
+        <section className="flex flex-col items-center justify-center w-full max-w-[1480px] h-fit px-4 py-8 lg:px-8 lg:py-12 mb-4 md:mb-8">
           <h1 className="heading-1 text-black text-center mb-2 md:mb-4">
             Invest with Intelligence
           </h1>
