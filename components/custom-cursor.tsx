@@ -7,7 +7,7 @@ import { useCursor } from './cursor-context';
 export const CustomCursor: React.FC = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(true); // Start visible
-  const { cursorState, cursorText, isDragging, isOnDarkBackground, customRingColor, isPressed, setIsPressed, isDarkButton } = useCursor();
+  const { cursorState, cursorText, isOnDarkBackground, customRingColor, isPressed, setIsPressed, isDarkButton } = useCursor();
   const cursorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

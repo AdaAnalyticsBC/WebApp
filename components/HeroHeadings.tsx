@@ -4,12 +4,6 @@ import { motion, useScroll, useTransform, useSpring } from "motion/react";
 
 export function HeroHeadings() {
   const { scrollYProgress } = useScroll();
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Only set isMobile on the client
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
 
   // Use desktop values for SSR, update to mobile on client
   const leftXRaw = useTransform(

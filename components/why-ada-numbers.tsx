@@ -10,6 +10,7 @@ export default function WhyAdaNumbers() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRef = containerRef.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !isVisible) {
@@ -22,13 +23,13 @@ export default function WhyAdaNumbers() {
       }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, [isVisible]);
@@ -80,7 +81,7 @@ export default function WhyAdaNumbers() {
             format={{ notation: 'compact', style: 'currency', currency: 'USD', maximumFractionDigits: 1, trailingZeroDisplay: 'stripIfInteger' }}
             suffix="+"
             className="inline"
-            style={{ '--number-flow-mask-height': '0em' } as any}
+            style={{ '--number-flow-mask-height': '0em' } as React.CSSProperties}
           />
         </span>
       </div>
@@ -94,7 +95,7 @@ export default function WhyAdaNumbers() {
             format={{ notation: 'compact', maximumFractionDigits: 1, trailingZeroDisplay: 'stripIfInteger' }}
             suffix="+"
             className="inline"
-            style={{ '--number-flow-mask-height': '0em' } as any}
+            style={{ '--number-flow-mask-height': '0em' } as React.CSSProperties}
           />
         </span>
       </div>

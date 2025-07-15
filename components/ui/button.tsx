@@ -2,7 +2,7 @@
 
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
@@ -45,24 +45,18 @@ function Button({
   const Comp = asChild ? Slot : "button"
 
   // Only animate underline after mount (client-side)
-  const [mounted, setMounted] = useState(false)
-  const [hovered, setHovered] = useState(false)
   const [isPressed, setIsPressed] = useState(false)
   const { onMouseEnter, onMouseLeave } = useCursorHover()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+
 
       const handleMouseEnter = () => {
-      setHovered(true)
       // Only default and destructive variants have dark backgrounds and need white dots
       const isDarkVariant = variant === 'default' || variant === 'destructive'
       onMouseEnter('hover', '', undefined, isDarkVariant)
     }
 
     const handleMouseLeave = () => {
-      setHovered(false)
       setIsPressed(false) // Reset pressed state when leaving button
       onMouseLeave()
     }

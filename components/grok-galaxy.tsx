@@ -37,7 +37,7 @@ function getHardcodedNodes(size = 0.14) {
   const nodes = [];
   const radius = 7;
   const total = 160;
-  let spreadFactor = 0.5;
+  const spreadFactor = 0.5;
 
   // Use a fixed seed for deterministic layout
   const rand = mulberry32(42);
@@ -68,13 +68,11 @@ function getHardcodedNodes(size = 0.14) {
 
 function Node({
   position,
-  label,
   size,
   hoverable,
   isBlue
 }: {
   position: [number, number, number];
-  label: string;
   size: number;
   hoverable: boolean;
   isBlue: boolean;
@@ -191,26 +189,28 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
   const { setCursorState, setCursorText, setIsDragging } = useCursor();
 
   // Drag handlers
-  const onPointerDown = useCallback((e: any) => {
+  const onPointerDown = useCallback((e: PointerEvent) => {
     isDragging.current = true;
     last.current = { x: e.clientX, y: e.clientY };
     setCursorState('move'); // Keep it as 'move' state to maintain blue ring
     setCursorText('Move');
     setIsDragging(true);
     // Prevent canvas drag select
-    e.target.setPointerCapture?.(e.pointerId);
+    const target = e.target as Element;
+    target.setPointerCapture?.(e.pointerId);
   }, [setCursorState, setCursorText, setIsDragging]);
   
-  const onPointerUp = useCallback((e: any) => {
+  const onPointerUp = useCallback((e: PointerEvent) => {
     isDragging.current = false;
     last.current = null;
     setCursorState('move');
     setCursorText('Move');
     setIsDragging(false);
-    e.target.releasePointerCapture?.(e.pointerId);
+    const target = e.target as Element;
+    target.releasePointerCapture?.(e.pointerId);
   }, [setCursorState, setCursorText, setIsDragging]);
   
-  const onPointerMove = useCallback((e: any) => {
+  const onPointerMove = useCallback((e: PointerEvent) => {
     if (!isDragging.current || !last.current || !ref.current) return;
     const dx = e.clientX - last.current.x;
     const dy = e.clientY - last.current.y;

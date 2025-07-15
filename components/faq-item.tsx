@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CirclePlus, CircleX } from "lucide-react";
+import { CirclePlus } from "lucide-react";
 import { useCursorHover } from "./custom-cursor";
 
 interface FAQItemProps {

@@ -51,7 +51,7 @@ interface WhyAdaCardProps {
   index: number;
 }
 
-const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data, index }) => {
+const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const { setCursorState, setCursorText } = useCursor();
