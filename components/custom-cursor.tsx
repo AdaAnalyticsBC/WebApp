@@ -140,7 +140,7 @@ export const CustomCursor: React.FC = () => {
               {/* Outer circle for hover/drag/move states */}
               <motion.div
                 className={`absolute rounded-full border ${
-                  !customRingColor && cursorState === 'drag' ? 'border-white' : 
+                  !customRingColor && cursorState === 'drag' && cursorText === 'Drag' ? 'border-white' : 
                   !customRingColor ? 'border-sky-400' : ''
                 }`}
                 style={{

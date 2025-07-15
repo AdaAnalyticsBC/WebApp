@@ -9,6 +9,7 @@ import { HeroGlassCard } from "@/components/HeroGlassCard";
 import WhyAdaNumbers from "@/components/why-ada-numbers";
 import FAQQuestions from "@/components/faq-questions";
 import PricingSection from "@/components/pricing-section";
+import ResearchSection from "@/components/research-section";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon, MessagesSquare } from "lucide-react";
 
@@ -63,11 +64,13 @@ export default function Home() {
             </div>
 
           </section>
-        {/* P E R F O R M A N C E   S E C T I O N */}
+          {/* P E R F O R M A N C E   S E C T I O N */}
+        </DarkAreaDetector>
         {/* L A T E S T   R E S E A R C H   S E C T I O N */}
-
+        <ResearchSection />
 
         {/* M E M B E R S H I P   A N D   P R I C I N G   S E C T I O N */}
+        <DarkAreaDetector isDark={true}>
          <PricingSection />
         </DarkAreaDetector>
 
