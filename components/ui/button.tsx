@@ -24,7 +24,7 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent dark:hover:bg-accent/50 transition-colors duration-300 rounded-full",
         link: "transition-colors duration-300",
-        none: "p-0",
+        none: "w-full",
       },
     },
     defaultVariants: {

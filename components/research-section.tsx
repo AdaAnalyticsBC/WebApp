@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCursorHover } from "./custom-cursor";
@@ -202,6 +202,26 @@ function ResearchCard({ article, featured = false }: ResearchCardProps) {
 
 export default function ResearchSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [slidePercent, setSlidePercent] = useState(100); // 100% width by default (mobile)
+
+  // Update slide width percent based on viewport – 50% (2 slides) for md and up to lg breakpoint
+  useEffect(() => {
+    const updateSlidePercent = () => {
+      if (typeof window !== 'undefined') {
+        const width = window.innerWidth;
+        // Tailwind md breakpoint ~768px, lg ~1024px – only apply between md and lg
+        if (width >= 768 && width < 1024) {
+          setSlidePercent(50); // show two cards
+        } else {
+          setSlidePercent(100); // default single card
+        }
+      }
+    };
+
+    updateSlidePercent();
+    window.addEventListener('resize', updateSlidePercent);
+    return () => window.removeEventListener('resize', updateSlidePercent);
+  }, []);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % researchData.articles.length);
@@ -221,7 +241,8 @@ export default function ResearchSection() {
             <h2 className="heading-2 text-black text-left">Latest Research</h2>
           </div>
           
-          <Button variant="outline" className="hidden button-2 md:flex px-6 py-3">
+          {/* Desktop / tablet header button – outline style */}
+          <Button variant="outline" className="hidden md:flex button-2 px-3 py-2 uppercase tracking-tight">
             VIEW ALL
           </Button>
         </div>
@@ -274,10 +295,10 @@ export default function ResearchSection() {
             <div className="overflow-hidden">
               <div 
                 className="flex transition-transform duration-300 ease-out"
-                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                style={{ transform: `translateX(-${currentIndex * slidePercent}%)` }}
               >
                 {researchData.articles.map((article) => (
-                  <div key={article.id} className="w-full flex-shrink-0 pr-4">
+                  <div key={article.id} className="w-full md:w-1/2 flex-shrink-0 pr-4 md:max-w-[400px]">
                     <ResearchCard article={article} />
                   </div>
                 ))}
@@ -300,7 +321,7 @@ export default function ResearchSection() {
           
           {/* Mobile View All Button */}
           <div className="flex justify-center mt-8 md:hidden">
-            <Button variant="outline" className="w-full max-w-[320px] px-6 py-3">
+            <Button variant="outline" className="w-full max-w-[320px] button-2 px-3 py-2 uppercase tracking-tight max-w-[320px]">
               VIEW ALL
             </Button>
           </div>

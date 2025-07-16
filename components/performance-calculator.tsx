@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
+import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,6 +21,7 @@ import { useCursorHover } from './custom-cursor';
 import { StrategyCard } from './strategy-card';
 import { PerformanceChart } from './performance-chart';
 import PerfomanceMetrics from './perfomance-metrics';
+import Link from 'next/link';
 
 const strategies = [
   'Luthor - Flagship (US Stocks)',
@@ -125,7 +126,7 @@ export default function PerformanceCalculator() {
             <Input
               value={initialInvestment}
               onChange={handleInvestmentChange}
-              className="h-12 bg-neutral-700 border-neutral-600 text-white pl-8 pr-4 text-lg font-medium placeholder:text-neutral-400 focus:border-sky-400 focus:ring-sky-400/20 hover:bg-neutral-600 transition-colors duration-200"
+              className="h-12 bg-neutral-700 border-neutral-600 text-white pl-8 pr-4 text-base font-medium placeholder:text-neutral-400 focus:border-sky-400 focus:ring-sky-400/20 hover:bg-neutral-600 transition-colors duration-200"
               placeholder="1,000"
               onMouseEnter={() => onMouseEnter('hover')}
               onMouseLeave={onMouseLeave}
@@ -242,6 +243,38 @@ export default function PerformanceCalculator() {
     </div>
   );
 
+  const disclosures = (
+    <div className="w-full mt-8 lg:mt-16">
+      <p className="text-neutral-500 text-sm leading-tight tracking-tight">
+        This interactive performance tool offers hypothetical performance outcomes for a selected strategy. 
+        Modeled performance is: (1) based on the initial investment and account type (if applicable); 
+        (2) inclusive of any Titan fees and annual fund expenses for third-party funds; and 
+        (3) assumes any dividends and distributions are reinvested.
+      </p>
+      <br />
+      <p className="text-neutral-500 text-sm leading-tight tracking-tight">
+        Performance returns begin at the Inception Date of the selected strategy through the Last Day of the Previous Month. 
+        Based on the chosen risk profile, users can receive a recommended portfolio allocation in line with Titan's general recommendation.
+      </p>
+      <br />
+      <p className="text-neutral-500 text-sm leading-tight tracking-tight">
+        Returns do not represent actual client performance. Past performance is not indicative of future results; 
+        actual performance will vary. Investing involves risk, including loss of principal.
+      </p>
+      <br />
+      <div className="flex justify-start">
+        <Link
+          href="/disclosures"
+          className="text-neutral-500 hover:text-sky-500 text-sm font-medium underline underline-offset-2 transition-colors duration-200"
+          onMouseEnter={() => onMouseEnter('hover')}
+          onMouseLeave={onMouseLeave}
+        >
+          See Full Assumptions &amp; Disclosures
+        </Link>
+      </div>
+    </div>
+  );
+
   return (
     <section className="flex flex-col items-center justify-center w-full h-fit px-4 py-8 lg:px-8 lg:py-12 bg-neutral-900">
       <div className="flex flex-col items-center justify-center w-full h-fit max-w-[1480px]">
@@ -257,25 +290,42 @@ export default function PerformanceCalculator() {
         </div>
 
         {/* Responsive Layout */}
-        <div className="flex flex-col lg:flex-row lg:items-stretch justify-center w-full gap-8 lg:gap-8 mt-4 md:mt-8">
+        <div className="flex flex-col lg:flex-row lg:items-stretch justify-center w-full gap-8 lg:gap-8">
           
           {/* Performance Chart - First on mobile, right on desktop */}
-          <div className="w-full h-fit order-1 lg:order-2">
-            <PerformanceChart strategy={selectedStrategy} initialInvestment={initialInvestment} />
-
-            {/* Mobile/Tablet: Calculator Drawer Trigger under legend */}
-            <div className="lg:hidden mt-4 flex justify-center w-full">
-              <Drawer>
-                <DrawerTrigger asChild>
-                  <Button variant="outline" className="w-full max-w-[320px] border-neutral-600 text-white hover:bg-neutral-800 px-4 py-2 rounded-full">
-                    Open Calculator
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="bg-neutral-900 border-t border-neutral-700 p-4 rounded-t-2xl max-h-[80vh] overflow-auto">
-                  {calculatorCard}
-                </DrawerContent>
-              </Drawer>
-            </div>
+          <div className="flex flex-col w-full h-fit gap-4 order-1 lg:order-2">
+            <PerformanceChart strategy={selectedStrategy} initialInvestment={initialInvestment}
+              extra={
+                <div className="w-full flex justify-center items-center lg:hidden my-6">
+                  <Drawer>
+                    <DrawerTrigger asChild>
+                      <Button variant="none" className="!block flex-1 max-w-[320px] bg-white text-black hover:bg-neutral-200 px-6 py-3 rounded-full uppercase tracking-tight button-2">
+                        Open Calculator
+                      </Button>
+                    </DrawerTrigger>
+                    <DrawerContent aria-label="Calculator" className="flex flex-col w-full h-fit items-center justify-start bg-neutral-900 border-t border-neutral-700 p-4 pb-8 rounded-t-xl">
+                      <DrawerHeader>
+                        <DrawerTitle className="sr-only">Calculator</DrawerTitle>
+                      </DrawerHeader>
+                      {calculatorCard}
+                      {/* Footer – extra spacing and centering for the Confirm button */}
+                      <DrawerFooter  /* kill the built-in padding and let the button stretch */
+                        className="w-full mt-8 flex flex-col items-center gap-2 px-0"
+                      >
+                        <DrawerClose asChild className="w-full">
+                          <Button
+                            variant="none"
+                            className="!block w-full flex-1 bg-white text-black hover:bg-neutral-200 px-6 py-3 rounded-full uppercase tracking-tight button-2"
+                          >
+                            CONFIRM
+                          </Button>
+                        </DrawerClose>
+                      </DrawerFooter>
+                    </DrawerContent>
+                  </Drawer>
+                </div>
+              }
+            />
           </div>
 
           {/* Desktop / Tablet: Calculator & Strategy card */}
@@ -284,11 +334,13 @@ export default function PerformanceCalculator() {
             {calculatorCard}
             {/* Strategy Details Card */}
             <StrategyCard strategy={selectedStrategy} />
+            {disclosures}
           </div>
 
           {/* Mobile Strategy card below chart */}
           <div className="lg:hidden mt-6 order-3">
             <StrategyCard strategy={selectedStrategy} />
+            {disclosures}
            
           </div>
 

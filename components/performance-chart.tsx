@@ -317,6 +317,7 @@ export const strategyColors: Record<string, { line: string; top: string; bottom:
 interface PerformanceChartProps {
   strategy: string;
   initialInvestment: string;
+  extra?: React.ReactNode;
 }
 
 // Helper component for metrics
@@ -329,7 +330,7 @@ function MetricItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function PerformanceChart({ strategy, initialInvestment }: PerformanceChartProps) {
+export function PerformanceChart({ strategy, initialInvestment, extra }: PerformanceChartProps) {
   // Shared animation settings for NumberFlow components
   const numberFlowProps = {
     transformTiming: { duration: 1000, easing: "ease-out" },
@@ -784,12 +785,12 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-3 h-3 rounded-full" style={{backgroundColor: colors.dot}}></div>
-                <span className="text-neutral-300">{strategyInfo.fullTitle}:</span>
+                <span className="text-neutral-300">{strategyInfo.name}:</span>
                 <span className="text-white font-medium">{formatCurrency(tooltipData.strategyValue)}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-3 h-3 bg-white rounded-full"></div>
-                <span className="text-neutral-300">Benchmark: S&P 500 (SPY):</span>
+                <span className="text-neutral-300">S&P 500:</span>
                 <span className="text-white font-medium">{formatCurrency(tooltipData.spyValue)}</span>
               </div>
             </div>
@@ -837,6 +838,9 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           </div>
         </div>
       </motion.div>
+
+      {/* Optional injected content (e.g., drawer button) */}
+      {extra && <div className="w-full mt-2">{extra}</div>}
 
       {/* Simulated Returns Section */}
       <motion.section 
@@ -911,36 +915,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
         </div>
       </motion.section>
 
-      {/* Disclaimer Section */}
-      <div className="w-full mt-8 lg:mt-16">
-          <p className="text-neutral-500 text-sm leading-tight tracking-tight">
-            This interactive performance tool offers hypothetical performance outcomes for a selected strategy. 
-            Modeled performance is: (1) based on the initial investment and account type (if applicable); 
-            (2) inclusive of any Titan fees and annual fund expenses for third-party funds; and 
-            (3) assumes any dividends and distributions are reinvested.
-          </p>
-          <br />
-          <p className="text-neutral-500 text-sm leading-tight tracking-tight">
-            Performance returns begin at the Inception Date of the selected strategy through the Last Day of the Previous Month. 
-            Based on the chosen risk profile, users can receive a recommended portfolio allocation in line with Titan's general recommendation.
-          </p>
-          <br />
-          <p className="text-neutral-500 text-sm leading-tight tracking-tight">
-            Returns do not represent actual client performance. Past performance is not indicative of future results; 
-            actual performance will vary. Investing involves risk, including loss of principal.
-          </p>
-          <br />
-          <div className="flex justify-start">
-              <Link
-                href="/disclosures"
-                className="text-neutral-500 hover:text-sky-500 text-sm font-medium underline underline-offset-2 transition-colors duration-200"
-                onMouseEnter={() => onMouseEnter('hover')}
-                onMouseLeave={onMouseLeave}
-              >
-                See Full Assumptions & Disclosures
-              </Link>
-            </div>
-        </div>
+      {/* Disclaimer section removed—moved outside chart */}
     </div>
   );
 } 
