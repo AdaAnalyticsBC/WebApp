@@ -35,7 +35,7 @@ export default function Footer() {
                   {/* Back to Top */}
                   <Button 
                     variant="link" 
-                    className="button-3"
+                    className="button-3 hover:text-white hover:bg-transparent"
                     onClick={scrollToTop}
                     onMouseEnter={() => onMouseEnter('hover')}
                     onMouseLeave={onMouseLeave}
@@ -297,7 +297,7 @@ export default function Footer() {
                 <div className="flex justify-between items-center w-full">
                   <Button 
                     variant="link" 
-                    className="button-3"
+                    className="button-3 hover:text-white hover:bg-transparent"
                     onClick={scrollToTop}
                     onMouseEnter={() => onMouseEnter('hover')}
                     onMouseLeave={onMouseLeave}

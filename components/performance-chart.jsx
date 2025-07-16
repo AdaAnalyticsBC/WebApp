@@ -9,11 +9,10 @@ import { strategyDetails } from './strategy-card';
 import { DotPattern } from './magicui/dot-pattern';
 import { cn } from "@/lib/utils";
 import { useCursorHover } from './custom-cursor';
-import Link from 'next/link';
-import { createChart, ColorType, IChartApi, ISeriesApi, UTCTimestamp, AreaSeries, LineSeries } from 'lightweight-charts';
+import { createChart, ColorType, AreaSeries, LineSeries } from 'lightweight-charts';
 
 // Seeded random number generator for consistent server/client rendering
-function seededRandom(seed: number) {
+function seededRandom(seed) {
   let state = seed;
   return function() {
     state = (state * 9301 + 49297) % 233280;
@@ -22,7 +21,7 @@ function seededRandom(seed: number) {
 }
 
 // Time series data for charts (5 years of monthly data)
-export const generateTimeSeriesData = (strategy: string, initialValue: number = 1000) => {
+export const generateTimeSeriesData = (strategy, initialValue = 1000) => {
   const startDate = new Date('2020-01-01');
   const endDate = new Date(); // through today
   const data = [];
@@ -43,7 +42,7 @@ export const generateTimeSeriesData = (strategy: string, initialValue: number = 
     }
   };
 
-  const params = strategyParams[strategy as keyof typeof strategyParams];
+  const params = strategyParams[strategy];
   const random = seededRandom(params.seed);
   let currentValue = initialValue;
   let currentDate = new Date(startDate);
@@ -59,7 +58,7 @@ export const generateTimeSeriesData = (strategy: string, initialValue: number = 
     currentValue *= (1 + trendReturn + volatilityReturn);
     
     data.push({
-      time: (currentDate.getTime() / 1000) as UTCTimestamp,
+      time: (currentDate.getTime() / 1000),
       value: parseFloat(currentValue.toFixed(2))
     });
 
@@ -71,7 +70,7 @@ export const generateTimeSeriesData = (strategy: string, initialValue: number = 
 };
 
 // Generate SPY comparison data (more conservative baseline)
-export const generateSPYData = (initialValue: number = 1000) => {
+export const generateSPYData = (initialValue = 1000) => {
   const startDate = new Date('2020-01-01');
   const endDate = new Date(); // through today
   const data = [];
@@ -91,7 +90,7 @@ export const generateSPYData = (initialValue: number = 1000) => {
     currentValue *= (1 + baseReturn + volatilityReturn + cyclicalReturn);
     
     data.push({
-      time: (currentDate.getTime() / 1000) as UTCTimestamp,
+      time: (currentDate.getTime() / 1000),
       value: parseFloat(currentValue.toFixed(2))
     });
 
@@ -112,12 +111,12 @@ const TIME_PERIODS = [
 ];
 
 // Helper function to filter data by time period
-const filterDataByPeriod = (data: any[], period: string) => {
+const filterDataByPeriod = (data, period) => {
   if (period === '5Y') return data;
   
-  // “Now” = today because data extends to today
+  // "Now" = today because data extends to today
   const endDate = new Date();
-  let startDate: Date;
+  let startDate;
   
   if (period === 'YTD') {
     startDate = new Date(endDate.getFullYear(), 0, 1);
@@ -134,7 +133,7 @@ const filterDataByPeriod = (data: any[], period: string) => {
 };
 
 // Helper function to format currency for y-axis
-const formatCurrency = (value: number) => {
+const formatCurrency = (value) => {
   if (value >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`;
   } else if (value >= 1000) {
@@ -145,7 +144,7 @@ const formatCurrency = (value: number) => {
 };
 
 // Helper function to format date for tooltip
-const formatTooltipDate = (timestamp: UTCTimestamp) => {
+const formatTooltipDate = (timestamp) => {
   const date = new Date(timestamp * 1000);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = months[date.getMonth()];
@@ -156,18 +155,18 @@ const formatTooltipDate = (timestamp: UTCTimestamp) => {
 /* ---------- NEW HELPERS ---------- */
 
 // Human‑friendly "YYYY" label for cards / axes
-const formatDateLabel = (d: Date): string =>
+const formatDateLabel = (d) =>
   d.toLocaleDateString('en-US', { year: 'numeric' });
 
 // Simplified beta calculation: cov(strategy, spy) / var(spy)
 const computeBeta = (
-  strat: { value: number }[],
-  spy: { value: number }[]
-): number => {
+  strat,
+  spy
+) => {
   if (strat.length < 2 || spy.length < 2) return NaN;
 
-  const sRet: number[] = [];
-  const bRet: number[] = [];
+  const sRet = [];
+  const bRet = [];
 
   for (let i = 1; i < Math.min(strat.length, spy.length); i++) {
     sRet.push((strat[i].value - strat[i - 1].value) / strat[i - 1].value);
@@ -191,13 +190,13 @@ const computeBeta = (
 };
 
 // ---------- metrics helper ----------
-const computeMetrics = (s: { value:number }[], b: { value:number }[]) => {
+const computeMetrics = (s, b) => {
   if (s.length < 2) return {
     cumulativeReturn: NaN, annualizedReturn: NaN, standardDeviation: NaN,
     maxDrawdown: NaN, sharpeRatio: NaN, beta: NaN,
   };
 
-  const sRet:number[] = [], bRet:number[] = [];
+  const sRet = [], bRet = [];
   let peak = s[0].value, maxDD = 0;
   for (let i=1;i<s.length;i++){
     const sr = (s[i].value-s[i-1].value)/s[i-1].value;
@@ -287,7 +286,7 @@ export const basePerformanceData = {
   }
 };
 
-export const strategyColors: Record<string, { line: string; top: string; bottom: string; dot: string }> = {
+export const strategyColors = {
   'Luthor - Flagship (US Stocks)': {
     line: '#0ea5e9',
     top: 'rgba(14,165,233,0.4)',
@@ -314,14 +313,7 @@ export const strategyColors: Record<string, { line: string; top: string; bottom:
   }
 };
 
-interface PerformanceChartProps {
-  strategy: string;
-  initialInvestment: string;
-  extra?: React.ReactNode;
-}
-
-// Helper component for metrics
-function MetricItem({ label, value }: { label: string; value: string }) {
+function MetricItem({ label, value }) {
   return (
     <div className="flex flex-col px-2 lg:px-4 text-center lg:text-left">
       <span className="tag-1 text-neutral-500 text-xs lg:text-sm">{label}</span>
@@ -330,32 +322,25 @@ function MetricItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function PerformanceChart({ strategy, initialInvestment, extra }: PerformanceChartProps) {
+export function PerformanceChart({ strategy, initialInvestment, extra }) {
   // Shared animation settings for NumberFlow components
   const numberFlowProps = {
     transformTiming: { duration: 1000, easing: "ease-out" },
     spinTiming: { duration: 1000, easing: "ease-out" },
     opacityTiming: { duration: 600,  easing: "ease-out" },
   };
-  const strategyInfo = strategyDetails[strategy as keyof typeof strategyDetails];
-  const colors = strategyColors[strategy] ?? strategyColors['Luthor - Flagship (US Stocks)'];
-  const basePerformance = basePerformanceData[strategy as keyof typeof basePerformanceData];
+  const strategyInfo = strategyDetails[strategy];
+  const colors = strategyColors[strategy] || strategyColors['Luthor - Flagship (US Stocks)'];
+  const basePerformance = basePerformanceData[strategy];
   const { onMouseEnter, onMouseLeave } = useCursorHover();
   
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const strategySeriesRef = useRef<any>(null);
-  const spySeriesRef = useRef<any>(null);
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const strategySeriesRef = useRef(null);
+  const spySeriesRef = useRef(null);
   
   const [selectedPeriod, setSelectedPeriod] = useState('3Y');
-  const [tooltipData, setTooltipData] = useState<{
-    visible: boolean;
-    date: string;
-    strategyValue: number;
-    spyValue: number;
-    x: number;
-    y: number;
-  }>({
+  const [tooltipData, setTooltipData] = useState({
     visible: false,
     date: '',
     strategyValue: 0,
@@ -365,45 +350,34 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
   });
   
   // State for Alpaca SPY data
-  const [spyRaw, setSpyRaw] = useState<any[]>([]);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch('/api/spy');
-        const json = await res.json();
-        setSpyRaw(json.bars || []);
-      } catch (err) {
-        console.error('Failed to fetch SPY bars', err);
-      }
-    };
-    fetchData();
-  }, []);
+  const [rawData, setRawData] = useState(null);
+  const [spyRaw, setSpyRaw] = useState(null);
+  
+  // State for current performance value that updates with timeframe
+  const [mainValue, setMainValue] = useState(basePerformance?.currentValue || 0);
+  const [hoverPrice, setHoverPrice] = useState(null);
 
-  // Generate full raw data once (weekly through today)
-  const rawData = useMemo(() => {
-    if (spyRaw.length) {
-      const spy = spyRaw;
-      return { strategy: [], spy };
-    }
-    // fallback to synthetic generator if API not ready
-    const base = 1000;
-    return {
-      strategy: generateTimeSeriesData(strategy, base),
-      spy: generateSPYData(base)
-    };
-  }, [strategy, spyRaw]);
+  useEffect(() => {
+    // Only run on client
+    setRawData({
+      strategy: generateTimeSeriesData(strategy, 1000),
+      spy: generateSPYData(1000)
+    });
+    setSpyRaw(generateSPYData(1000));
+  }, [strategy]);
 
   // Compute scale factor so first point of selected timeframe equals user investment
+  // Always call useMemo, even when rawData is null
   const scaledData = useMemo(() => {
     const invest = parseFloat(initialInvestment.replace(/,/g, '')) || 1000;
-    if (!rawData.spy.length) return { strategy: [], spy: [] };
+    if (!rawData || !rawData.spy || !rawData.spy.length) return { strategy: [], spy: [] };
 
     // Determine factor from first SPY bar inside timeframe
     const spyWindow = filterDataByPeriod(rawData.spy, selectedPeriod);
     if (!spyWindow.length) return { strategy: [], spy: [] };
     const factor = invest / spyWindow[0].value;
 
-    const scaleArr = (arr:any[]) => arr.map(p => ({ ...p, value: +(p.value * factor).toFixed(2) }));
+    const scaleArr = (arr) => arr.map(p => ({ ...p, value: +(p.value * factor).toFixed(2) }));
 
     const scaledSpy = scaleArr(rawData.spy);
     const scaledStrategy = scaledSpy.map(p => ({ ...p, value: +(p.value * 1.2).toFixed(2) }));
@@ -423,33 +397,56 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
   useEffect(() => {
     if (!strategySeriesRef.current || !spySeriesRef.current) return;
 
-    strategySeriesRef.current.setData(scaledData.strategy);
-    spySeriesRef.current.setData(scaledData.spy);
-
-    if (chartRef.current && filteredData.strategy.length) {
-      const from = filteredData.strategy[0].time;
-      const to   = filteredData.strategy.at(-1)!.time;
-      chartRef.current.timeScale().setVisibleRange({from, to});
-
-      // Extend logical range by half bar so line touches both axes
-      const vr = chartRef.current.timeScale().getVisibleLogicalRange();
-      if (vr) {
-        chartRef.current.timeScale().setVisibleLogicalRange({ from: vr.from - 0.5, to: vr.to + 0.5 });
-      }
-
-      // Dynamically adjust bar spacing so the first and last points touch edges
-      const width = chartContainerRef.current?.clientWidth || 600;
-      const bars = filteredData.strategy.length;
-      const spacing = Math.max(2, width / Math.max(1, bars - 1));
-      chartRef.current.timeScale().applyOptions({ rightOffset: 0, barSpacing: spacing });
+    if (strategySeriesRef.current) {
+      strategySeriesRef.current.applyOptions({
+        lineColor: colors.line,
+        topColor: colors.top,
+        bottomColor: colors.bottom,
+      });
     }
-  }, [scaledData, filteredData]);
+    if (spySeriesRef.current) {
+      spySeriesRef.current.applyOptions({
+        color: '#ffffff',
+        lineWidth: 2,
+        crosshairMarkerVisible: false,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        priceFormat: {
+          type: 'custom',
+          formatter: (price) => formatCurrency(price),
+        },
+      });
+    }
+
+    if (strategySeriesRef.current && spySeriesRef.current) {
+      strategySeriesRef.current.setData(scaledData.strategy);
+      spySeriesRef.current.setData(scaledData.spy);
+
+      if (chartRef.current && filteredData.strategy.length) {
+        const from = filteredData.strategy[0].time;
+        const to   = filteredData.strategy.at(-1).time;
+        chartRef.current.timeScale().setVisibleRange({from, to});
+
+        // Extend logical range by half bar so line touches both axes
+        const vr = chartRef.current.timeScale().getVisibleLogicalRange();
+        if (vr) {
+          chartRef.current.timeScale().setVisibleLogicalRange({ from: vr.from - 0.5, to: vr.to + 0.5 });
+        }
+
+        // Dynamically adjust bar spacing so the first and last points touch edges
+        const width = chartContainerRef.current?.clientWidth || 600;
+        const bars = filteredData.strategy.length;
+        const spacing = Math.max(2, width / Math.max(1, bars - 1));
+        chartRef.current.timeScale().applyOptions({ rightOffset: 0, barSpacing: spacing });
+      }
+    }
+  }, [scaledData, filteredData, colors]);
 
   // Calculate dynamic performance based on filtered data
   const dynamicPerformance = useMemo(()=>{
-    if(!filteredData.strategy.length) return null;
+    if(!filteredData || !filteredData.strategy || !filteredData.strategy.length) return null;
     const start = filteredData.strategy[0].value;
-    const end   = filteredData.strategy.at(-1)!.value;
+    const end   = filteredData.strategy.at(-1).value;
     const change= end-start;
     const changePct = (change/start)*100;
     return {
@@ -468,10 +465,6 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
 
   // Get the current performance to display
   const currentPerformance = dynamicPerformance || basePerformance;
-  
-  // State for current performance value that updates with timeframe
-  const [mainValue, setMainValue] = useState(basePerformance?.currentValue || 0);
-  const [hoverPrice, setHoverPrice] = useState<number|null>(null);
 
   const startOfWindow = filteredData.strategy.length? filteredData.strategy[0].value : mainValue;
   const displayValue = hoverPrice ?? mainValue;
@@ -560,7 +553,7 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
       priceLineVisible: false,
       priceFormat: {
         type: 'custom',
-        formatter: (price: number) => formatCurrency(price),
+        formatter: (price) => formatCurrency(price),
       },
     });
 
@@ -573,13 +566,16 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
       priceLineVisible: false,
       priceFormat: {
         type: 'custom',
-        formatter: (price: number) => formatCurrency(price),
+        formatter: (price) => formatCurrency(price),
       },
     });
 
     // Seed initial data (avoids blank first render)
-    strategySeries.setData(rawData.strategy);
-    spySeries.setData(rawData.spy);
+    if (rawData && rawData.strategy && rawData.spy) {
+      strategySeries.setData(rawData.strategy);
+      spySeries.setData(rawData.spy);
+    }
+    
     chartRef.current = chart;
     strategySeriesRef.current = strategySeries;
     spySeriesRef.current = spySeries;
@@ -611,14 +607,14 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
         chartRef.current.remove();
       }
     };
-  }, []);
+  }, [rawData]); // Added rawData dependency
 
   // Handle crosshair move for tooltip
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const handleCrosshairMove = (param: any) => {
-      if (!param.point || !param.time) {
+    const handleCrosshairMove = (param) => {
+      if (!param || !param.point || !param.time) {
         setTooltipData(prev => ({ ...prev, visible: false }));
         return;
       }
@@ -651,7 +647,8 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
   // Reset hover when timeframe changes
   useEffect(()=>{ setHoverPrice(null); }, [selectedPeriod]);
   
-  if (!strategyInfo || !basePerformance) return null;
+  // All hooks called consistently every time
+  if (!rawData || !spyRaw || !strategyInfo || !basePerformance) return null;
 
   return (
     <div className="w-full h-fit flex flex-col">
@@ -684,7 +681,7 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
 
         {/* Performance Value - Dynamic based on filtered data */}
         <div className="mb-2">
-          <div className="flex items-baseline gap-1">
+          <div className="flex w-full gap-1">
             <span className="text-white text-2xl">$</span>
             <NumberFlow
               key={`value-${selectedPeriod}-${strategy}`}
@@ -702,18 +699,18 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
           key={`change-${selectedPeriod}-${strategy}`}
           className="flex items-center gap-2"
           animate={{ 
-            color: currentPerformance!.isPositive ? '#10b981' : '#ef4444' 
+            color: currentPerformance?.isPositive ? '#10b981' : '#ef4444' 
           }}
           transition={{ duration: 0.3 }}
         >
           <motion.div
             animate={{ 
-              rotate: currentPerformance!.isPositive ? 0 : 180,
-              color: currentPerformance!.isPositive ? '#10b981' : '#ef4444'
+              rotate: currentPerformance?.isPositive ? 0 : 180,
+              color: currentPerformance?.isPositive ? '#10b981' : '#ef4444'
             }}
             transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
           >
-            {(currentPerformance)!.isPositive ? (
+            {(currentPerformance)?.isPositive ? (
               <ArrowUp className="w-4 h-4" />
             ) : (
               <ArrowDown className="w-4 h-4" />
@@ -722,7 +719,7 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
           <motion.span 
             className={`number-mono-2 font-medium`}
             animate={{ 
-              color: currentPerformance!.isPositive ? '#10b981' : '#ef4444' 
+              color: currentPerformance?.isPositive ? '#10b981' : '#ef4444' 
             }}
             transition={{ duration: 0.3 }}
           >
@@ -883,7 +880,7 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
             <h3 className="heading-3 text-white rounded-sm px-2 py-1" style={{backgroundColor: colors.top}}>
               <NumberFlow
                 key={`end-value-${selectedPeriod}-${strategy}`}
-                value={currentPerformance!.currentValue}
+                value={currentPerformance?.currentValue}
                 locales="en-US"
                 format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
                 {...numberFlowProps}
@@ -905,12 +902,12 @@ export function PerformanceChart({ strategy, initialInvestment, extra }: Perform
         <div className="flex flex-col w-full p-4 md:p-6 bg-neutral-800 rounded-xl gap-6">
           {/* Responsive metrics grid - simplified to show most important metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-0 lg:divide-x lg:divide-neutral-700">
-            <MetricItem label="Cumulative Return" value={`${currentPerformance!.metrics.cumulativeReturn.toFixed(1)}%`} />
-            <MetricItem label="Annualized Return" value={`${currentPerformance!.metrics.annualizedReturn.toFixed(1)}%`} />
-            <MetricItem label="Std Deviation"     value={`${currentPerformance!.metrics.standardDeviation.toFixed(1)}%`} />
-            <MetricItem label="Max Drawdown"      value={`${currentPerformance!.metrics.maxDrawdown.toFixed(1)}%`} />
-            <MetricItem label="Sharpe Ratio"      value={ currentPerformance!.metrics.sharpeRatio.toFixed(2)} />
-            <MetricItem label="Beta vs SPY"       value={ currentPerformance!.metrics.beta.toFixed(2)} />
+            <MetricItem label="Cumulative Return" value={`${currentPerformance?.metrics.cumulativeReturn.toFixed(1)}%`} />
+            <MetricItem label="Annualized Return" value={`${currentPerformance?.metrics.annualizedReturn.toFixed(1)}%`} />
+            <MetricItem label="Std Deviation"     value={`${currentPerformance?.metrics.standardDeviation.toFixed(1)}%`} />
+            <MetricItem label="Max Drawdown"      value={`${currentPerformance?.metrics.maxDrawdown.toFixed(1)}%`} />
+            <MetricItem label="Sharpe Ratio"      value={ currentPerformance?.metrics.sharpeRatio.toFixed(2)} />
+            <MetricItem label="Beta vs SPY"       value={ currentPerformance?.metrics.beta.toFixed(2)} />
           </div>
         </div>
       </motion.section>

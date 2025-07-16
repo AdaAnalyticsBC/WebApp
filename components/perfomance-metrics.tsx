@@ -8,7 +8,7 @@ type MetricProps = {
 
 function Metric({ label, value }: MetricProps) {
   return (
-    <div className="flex flex-col px-4">
+    <div className="flex flex-col px-4 w-full">
       <span className="tag-1 text-neutral-500">{label}</span>
       <span className="heading-3 text-white">{value}</span>
     </div>
@@ -18,7 +18,7 @@ function Metric({ label, value }: MetricProps) {
 /* === Main component === */
 export default function PerfomanceMetrics() {
   return (
-    <section className="flex flex-col w-full gap-6">
+    <section className="flex flex-col w-full h-fit gap-6">
       {/* ---------- Simulated Returns ---------- */}
       <h3 className="heading-3 text-white">Simulated Returns</h3>
 
@@ -41,7 +41,7 @@ export default function PerfomanceMetrics() {
       {/* ---------- Performance Metrics ---------- */}
       <h3 className="heading-3 text-white">Performance Metrics</h3>
 
-      <div className="flex flex-col w-full p-4 md:p-6 bg-neutral-800 rounded-xl gap-6">
+      <div className="flex flex-col w-full h-fit p-4 md:p-6 bg-neutral-800 rounded-xl gap-8">
         {/* Top‑row metrics */}
         <div className="grid grid-cols-6 w-full divide-x divide-neutral-700">
           <Metric label="Cumulative Return" value="20302.3%" />
@@ -53,11 +53,12 @@ export default function PerfomanceMetrics() {
         </div>
 
         {/* Beta (second row) */}
+
         <Metric label="Beta vs SPY" value="0.25" />
       </div>
 
-      <p className="paragraph-1 text-neutral-500">
-        This interactive performance tool offers hypothetical performance outcomes for a selected strategy. Modeled performance is: (1) based on the initial investment and account type (if applicable); (2) inclusive of any Titan fees and annual fund expenses for third-party funds; and (3) assumes any dividends and distributions are reinvested. Performance returns begin at the Inception Date of the selected strategy through the Last Day of the Previous Month. Based on the chosen risk profile, users can receive a recommended portfolio allocation in line with Titan's general recommendation. Returns do not represent actual client performance.
+      <p className="h-fit w-full paragraph-1 text-neutral-500">
+        This interactive performance tool offers hypothetical performance outcomes for a selected strategy. Modeled performance is: (1) based on the initial investment and account type (if applicable); (2) inclusive of any Titan fees and annual fund expenses for third-party funds; and (3) assumes any dividends and distributions are reinvested. Performance returns begin at the Inception Date of the selected strategy through the Last Day of the Previous Month. Based on the chosen risk profile, users can receive a recommended portfolio allocation in line with Titan&apos;s general recommendation. Returns do not represent actual client performance.
         <br />
         Past performance is not indicative of future results; actual performance will vary. Investing involves risk, including loss of principal. Click ‘See Full Assumptions & Disclosures’ below for detailed information about the assumptions and disclosures for this tool.
       </p>

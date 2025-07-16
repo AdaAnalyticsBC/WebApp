@@ -49,24 +49,14 @@ const cardData: CardData[] = [
 interface WhyAdaCardProps {
   data: CardData;
   index: number;
+  isActive: boolean;
+  isMobileOrTablet: boolean;
+  onCardClick: (index: number) => void;
 }
 
-const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data }) => {
+const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data, index, isActive, isMobileOrTablet, onCardClick }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const { setCursorState, setCursorText } = useCursor();
-
-  // Check if device is mobile/tablet (hover state default for touch devices)
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobileOrTablet(window.innerWidth < 1024);
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
 
   const handleMouseEnter = () => {
     if (!isMobileOrTablet) {
@@ -84,16 +74,23 @@ const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data }) => {
     }
   };
 
-  // For mobile/tablet, always show hover state
-  const shouldShowHoverState = isMobileOrTablet || isHovered;
+  // Only the flicker/active state animates for the active card on mobile
+  const shouldShowHoverState = isMobileOrTablet ? isActive : isHovered;
 
   const IconComponent = data.icon;
 
   return (
     <motion.div
-      className="relative group cursor-pointer h-[320px] lg:h-[500px] border border-neutral-700 overflow-hidden"
+      className={cn(
+        "relative group cursor-pointer border border-neutral-700 overflow-hidden flex flex-col items-center justify-center transition-all duration-300",
+        // Consistent height and padding for all breakpoints
+        "h-[242px] md:h-[320px] lg:h-[500px] p-4 md:p-6",
+        // Consistent gap between icon and text
+        "gap-3 md:gap-4"
+      )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={() => isMobileOrTablet && onCardClick(index)}
     >
       {/* Flickering Grid */}
       <motion.div 
@@ -127,7 +124,7 @@ const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data }) => {
 
       {/* Bottom Gradient Overlay */}
       <motion.div 
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 h-20 md:h-32 pointer-events-none"
         style={{
           background: 'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 64%, transparent 100%)'
         }}
@@ -137,49 +134,90 @@ const WhyAdaCard: React.FC<WhyAdaCardProps> = ({ data }) => {
       />
 
       {/* Content Container */}
-      <div className="relative z-20 h-full flex flex-col items-center justify-start lg:justify-center p-3 pt-22 lg:p-8">
+      <div className="relative z-20 flex flex-col items-center justify-center w-full h-full gap-2 md:gap-4">
         {/* Icon */}
         <motion.div 
-          className="flex items-center justify-start"
+          className="flex items-center justify-center mb-2"
           animate={{
-            scale: shouldShowHoverState ? 0.8 : 1, 
-            y: shouldShowHoverState ? -30 : 0,
+            scale: shouldShowHoverState ? 0.96 : 1, 
+            y: shouldShowHoverState ? -8 : 0,
           }}
           transition={{ duration: 0.3 }}
         >
           <IconComponent 
-            size={isMobileOrTablet ? 56 : 80} 
+            size={isMobileOrTablet ? 36 : 56} 
             className={cn(
               "transition-colors duration-300",
-              shouldShowHoverState ? data.iconColor : "text-neutral-500"
+              shouldShowHoverState ? data.iconColor : (isMobileOrTablet ? "text-white" : "text-neutral-500")
             )} 
           />
         </motion.div>
 
-        {/* Text Content */}
-        <motion.div 
-          className="text-center space-y-3 flex flex-col items-center justify-start"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: shouldShowHoverState ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h3 className="heading-4 text-white text-lg lg:text-xl font-semibold leading-tight">
+        {/* Text Content (always visible, just smaller on mobile) */}
+        <div className="text-center flex flex-col items-center justify-center w-full">
+          <h3 className={cn(
+            "font-semibold leading-tight text-white",
+            isMobileOrTablet ? "text-base" : "text-lg md:text-xl",
+            "mb-1"
+          )}>
             {data.title}
           </h3>
-          <p className="subtitle-1 w-full text-center max-w-[300px]">
+          <p className={cn(
+            "subtitle-1 w-full text-center text-neutral-300",
+            isMobileOrTablet ? "text-xs max-w-[264px]" : "text-sm max-w-[324px]"
+          )}>
             {data.description}
           </p>
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );
 };
 
 export default function WhyAdaCards() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+
+  // Track viewport width to determine mobile/tablet state
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Automatically cycle the active card every 4 seconds on mobile/tablet
+  useEffect(() => {
+    if (!isMobileOrTablet) return;
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % cardData.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isMobileOrTablet]);
+
+  const handleCardClick = (index: number) => {
+    if (isMobileOrTablet) {
+      setActiveIndex(index);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 w-full">
       {cardData.map((card, index) => (
-        <WhyAdaCard key={index} data={card} index={index} />
+        <WhyAdaCard
+          key={index}
+          data={card}
+          index={index}
+          isActive={index === activeIndex}
+          isMobileOrTablet={isMobileOrTablet}
+          onCardClick={handleCardClick}
+        />
       ))}
     </div>
   );

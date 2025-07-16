@@ -4,7 +4,6 @@ import React, { useRef, useMemo, useState, useEffect, createContext, useCallback
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { useSpring, a } from '@react-spring/three';
 import { motion } from 'motion/react';
 import { Particles } from "./magicui/particles";
 import { useCursor } from './cursor-context';
@@ -34,19 +33,26 @@ function mulberry32(seed: number) {
   }
 }
 
-// Optimized node distribution with connection lines for all nodes
-function getOptimizedNodes(size = 0.14) {
-  const nodes = [];
+// Define a Node type for all nodes
+interface Node {
+  position: [number, number, number];
+  size: number;
+  isBlue: boolean;
+}
+
+// Optimized node distribution - half blue, half static
+function getOptimizedNodes(size = 0.14): Node[] {
+  const nodes: Node[] = [];
   const radius = 7;
-  const total = 60; // Reduced further for better performance
-  const spreadFactor = 0.5;
-  const interactiveCount = 10; // Increased interactive nodes
+  const total = 90; // More nodes for a denser, more circular look
+  const spreadFactor = 0.3; // Tighter cluster
+  const blueCount = Math.floor(total / 2); // Half blue nodes
 
   // Use a fixed seed for deterministic layout
   const rand = mulberry32(42);
 
-  // First, create interactive blue nodes
-  for (let i = 0; i < interactiveCount; i++) {
+  // Create all nodes (half blue, half static)
+  for (let i = 0; i < total; i++) {
     const theta = rand() * Math.PI * 2;
     const phi = Math.acos(2 * rand() - 1);
     const r = radius * (1 + rand() * spreadFactor);
@@ -57,31 +63,8 @@ function getOptimizedNodes(size = 0.14) {
 
     nodes.push({
       position: [x, y, z] as [number, number, number],
-      label: questionPool[i % questionPool.length],
       size,
-      hoverable: true,
-      isBlue: true,
-      isInteractive: true
-    });
-  }
-
-  // Then create static grey nodes
-  for (let i = interactiveCount; i < total; i++) {
-    const theta = rand() * Math.PI * 2;
-    const phi = Math.acos(2 * rand() - 1);
-    const r = radius * (1 + rand() * spreadFactor);
-
-    const x = r * Math.sin(phi) * Math.cos(theta);
-    const y = r * Math.sin(phi) * Math.sin(theta);
-    const z = r * Math.cos(phi);
-
-    nodes.push({
-      position: [x, y, z] as [number, number, number],
-      label: "",
-      size,
-      hoverable: false,
-      isBlue: false,
-      isInteractive: false
+      isBlue: i < blueCount
     });
   }
 
@@ -89,7 +72,7 @@ function getOptimizedNodes(size = 0.14) {
 }
 
 // Connection lines component for all nodes
-function ConnectionLines({ nodes }: { nodes: any[] }) {
+function ConnectionLines({ nodes }: { nodes: Node[] }) {
   const linesRef = useRef<THREE.Group>(null);
 
   useEffect(() => {
@@ -125,10 +108,10 @@ function ConnectionLines({ nodes }: { nodes: any[] }) {
   return <group ref={linesRef} />;
 }
 
-// Optimized static node rendering using InstancedMesh (without lines since they're separate now)
-function StaticNodes({ nodes }: { nodes: any[] }) {
+// Static (grey) nodes using InstancedMesh
+function StaticNodes({ nodes }: { nodes: Node[] }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const staticNodes = useMemo(() => nodes.filter(node => !node.isInteractive), [nodes]);
+  const staticNodes = useMemo(() => nodes.filter(node => !node.isBlue), [nodes]);
 
   useEffect(() => {
     if (!meshRef.current) return;
@@ -151,6 +134,8 @@ function StaticNodes({ nodes }: { nodes: any[] }) {
       ref={meshRef}
       args={[undefined, undefined, staticNodes.length]}
       position={[0, 0, 0]}
+      castShadow
+      receiveShadow
     >
       <boxGeometry args={[0.14, 0.14, 0.05]} />
       <meshStandardMaterial
@@ -162,153 +147,144 @@ function StaticNodes({ nodes }: { nodes: any[] }) {
   );
 }
 
-// Improved interactive node with better hover detection
-function InteractiveNode({
-  position,
-  size,
-  label
-}: {
-  position: [number, number, number];
-  size: number;
-  label: string;
-}) {
-  const ref = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+// Blue nodes using InstancedMesh
+function BlueNodes({ nodes }: { nodes: Node[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const blueNodes = useMemo(() => nodes.filter(node => node.isBlue), [nodes]);
 
-  // Memoize mobile check
   useEffect(() => {
-    const check = () => setIsMobileOrTablet(window.innerWidth < 800);
-    check();
-    const debouncedCheck = debounce(check, 100);
-    window.addEventListener('resize', debouncedCheck);
-    return () => window.removeEventListener('resize', debouncedCheck);
-  }, []);
+    if (!meshRef.current) return;
 
-  // Static rotation instead of useFrame for better performance
+    const mesh = meshRef.current;
+    const tempObject = new THREE.Object3D();
+    
+    blueNodes.forEach((node, i) => {
+      tempObject.position.set(node.position[0], node.position[1], node.position[2]);
+      tempObject.rotation.set(0.2, 0, 0.5);
+      tempObject.updateMatrix();
+      mesh.setMatrixAt(i, tempObject.matrix);
+    });
+    
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [blueNodes]);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, blueNodes.length]}
+      position={[0, 0, 0]}
+      castShadow
+      receiveShadow
+    >
+      <boxGeometry args={[0.14, 0.14, 0.05]} />
+      <meshStandardMaterial
+        color="#38bdf8"
+        emissive="#38bdf8"
+        emissiveIntensity={0.4}
+      />
+    </instancedMesh>
+  );
+}
+
+// Simple floating question tooltips (1-3 at a time)
+function FloatingQuestions() {
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [positions, setPositions] = useState<Array<[number, number, number]>>([]);
+
   useEffect(() => {
-    if (ref.current) {
-      ref.current.rotation.set(0.2, 0, 0.5);
+    // Pick 1-3 random questions
+    const questionCount = Math.floor(Math.random() * 3) + 1; // 1-3 questions
+    const selectedQuestions = [];
+    const selectedPositions = [];
+    
+    for (let i = 0; i < questionCount; i++) {
+      const randomIndex = Math.floor(Math.random() * questionPool.length);
+      selectedQuestions.push(questionPool[randomIndex]);
+      
+      // Random positions around the sphere
+      const radius = 8 + Math.random() * 2; // Slightly outside the node sphere
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.sin(phi) * Math.sin(theta);
+      const z = radius * Math.cos(phi);
+      
+      selectedPositions.push([x, y, z] as [number, number, number]);
     }
-  }, []);
-
-  // Improved hover handling with debouncing to prevent flickering
-  const handlePointerOver = useCallback(() => {
-    if (isMobileOrTablet) return;
     
-    // Clear any existing timeout
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    
-    setHovered(true);
-    setShowTooltip(true);
-  }, [isMobileOrTablet]);
+    setQuestions(selectedQuestions);
+    setPositions(selectedPositions);
 
-  const handlePointerOut = useCallback(() => {
-    if (isMobileOrTablet) return;
-    
-    // Add small delay before hiding to prevent flickering
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHovered(false);
-      setShowTooltip(false);
-    }, 50);
-  }, [isMobileOrTablet]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
+    // Update questions every 8 seconds
+    const interval = setInterval(() => {
+      const newQuestionCount = Math.floor(Math.random() * 3) + 1;
+      const newQuestions = [];
+      const newPositions = [];
+      
+      for (let i = 0; i < newQuestionCount; i++) {
+        const randomIndex = Math.floor(Math.random() * questionPool.length);
+        newQuestions.push(questionPool[randomIndex]);
+        
+        const radius = 8 + Math.random() * 2;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta);
+        const z = radius * Math.cos(phi);
+        
+        newPositions.push([x, y, z] as [number, number, number]);
       }
-    };
-  }, []);
+      
+      setQuestions(newQuestions);
+      setPositions(newPositions);
+    }, 8000);
 
-  const { scale } = useSpring({
-    scale: hovered ? 1.5 : 1,
-    config: { tension: 300, friction: 30 }
-  });
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
-      {/* Larger invisible interaction area to prevent flickering */}
-      <mesh
-        position={position}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      >
-        <boxGeometry args={[3, 3, 3]} />
-        <meshBasicMaterial transparent opacity={0} />
-      </mesh>
-
-      {/* Visible node */}
-      <a.mesh
-        ref={ref}
-        position={position}
-        scale={scale}
-      >
-        <boxGeometry args={[size * 1.2, size * 1.2, 0.05]} />
-        <meshStandardMaterial
-          color="#38bdf8"
-          emissive="#38bdf8"
-          emissiveIntensity={0.4}
-        />
-        {showTooltip && (
-          <Html 
-            position={[0, size * 2, 0]} 
-            center 
-            distanceFactor={10} 
-            zIndexRange={[50, 0]}
-            pointerEvents="none"
+      {questions.map((question, i) => (
+        <Html 
+          key={`${question}-${i}`}
+          position={positions[i] || [0, 0, 0]}
+          center 
+          distanceFactor={10} 
+          zIndexRange={[50, 0]}
+          pointerEvents="none"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="z-50 text-[13px] w-fit max-w-[200px] font-bold text-foreground bg-neutral-100 px-3 py-2 rounded-md backdrop-blur-lg shadow-lg text-center select-none pointer-events-none whitespace-nowrap"
+            style={{ pointerEvents: 'none' }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="z-50 text-[13px] w-fit font-bold text-foreground bg-neutral-100 px-3 py-2 rounded-md backdrop-blur-lg shadow-lg text-center whitespace-nowrap select-none pointer-events-none"
-              style={{ pointerEvents: 'none' }}
-            >
-              {label}
-            </motion.div>
-          </Html>
-        )}
-      </a.mesh>
+            {question}
+          </motion.div>
+        </Html>
+      ))}
     </>
   );
 }
 
-// Debounce utility
-function debounce(func: Function, wait: number) {
-  let timeout: NodeJS.Timeout;
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 function NodeGroup({ size = 0.14 }: { size?: number }) {
-  const nodes = useMemo(() => getOptimizedNodes(size), [size]);
-  const interactiveNodes = useMemo(() => nodes.filter(node => node.isInteractive), [nodes]);
+  const [nodes, setNodes] = useState<Node[] | null>(null);
+  useEffect(() => {
+    setNodes(getOptimizedNodes(size));
+  }, [size]);
+  
+  if (!nodes) return null;
 
   return (
     <>
       <ConnectionLines nodes={nodes} />
       <StaticNodes nodes={nodes} />
-      {interactiveNodes.map((node, i) => (
-        <InteractiveNode 
-          key={i} 
-          position={node.position}
-          size={node.size}
-          label={node.label}
-        />
-      ))}
+      <BlueNodes nodes={nodes} />
+      <FloatingQuestions />
     </>
   );
 }
@@ -405,9 +381,21 @@ export default function GrokGalaxy() {
           camera={{ position: [0, 0, 20], fov: 60 }} 
           className="w-full h-full"
           performance={{ min: 0.5 }}
+          shadows
         >
-          <ambientLight intensity={1} />
-          <pointLight position={[10, 60, 10]} intensity={0.2} />
+          <ambientLight intensity={0.4} />
+          <directionalLight 
+            position={[0, 10, 0]} 
+            intensity={0.8} 
+            castShadow 
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+            shadow-camera-far={50}
+            shadow-camera-left={-10}
+            shadow-camera-right={10}
+            shadow-camera-top={10}
+            shadow-camera-bottom={-10}
+          />
           <AutoRotate>
             <NodeGroup size={0.1} />
           </AutoRotate>

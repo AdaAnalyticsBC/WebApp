@@ -20,7 +20,6 @@ import {
 import { useCursorHover } from './custom-cursor';
 import { StrategyCard } from './strategy-card';
 import { PerformanceChart } from './performance-chart';
-import PerfomanceMetrics from './perfomance-metrics';
 import Link from 'next/link';
 
 const strategies = [
@@ -244,7 +243,7 @@ export default function PerformanceCalculator() {
   );
 
   const disclosures = (
-    <div className="w-full mt-8 lg:mt-16">
+    <div className="w-full">
       <p className="text-neutral-500 text-sm leading-tight tracking-tight">
         This interactive performance tool offers hypothetical performance outcomes for a selected strategy. 
         Modeled performance is: (1) based on the initial investment and account type (if applicable); 
@@ -254,7 +253,7 @@ export default function PerformanceCalculator() {
       <br />
       <p className="text-neutral-500 text-sm leading-tight tracking-tight">
         Performance returns begin at the Inception Date of the selected strategy through the Last Day of the Previous Month. 
-        Based on the chosen risk profile, users can receive a recommended portfolio allocation in line with Titan's general recommendation.
+        Based on the chosen risk profile, users can receive a recommended portfolio allocation in line with Titan&apos;s general recommendation.
       </p>
       <br />
       <p className="text-neutral-500 text-sm leading-tight tracking-tight">
@@ -338,7 +337,7 @@ export default function PerformanceCalculator() {
           </div>
 
           {/* Mobile Strategy card below chart */}
-          <div className="lg:hidden mt-6 order-3">
+          <div className="lg:hidden mt-4 order-3 gap-6 lg:gap-4 flex flex-col h-fit w-full">
             <StrategyCard strategy={selectedStrategy} />
             {disclosures}
            

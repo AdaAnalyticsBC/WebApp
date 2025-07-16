@@ -9,8 +9,14 @@ export async function GET(request: NextRequest) {
   try {
     const bars = await fetchSpyWeeklyBars(start, end);
     return NextResponse.json({ bars });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    let message = 'Unknown error';
+    if (error instanceof Error) {
+      message = error.message;
+    } else if (typeof error === 'string') {
+      message = error;
+    }
     console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 } 

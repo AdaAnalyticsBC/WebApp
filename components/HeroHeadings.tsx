@@ -4,6 +4,14 @@ import { motion, useScroll, useTransform, useSpring } from "motion/react";
 
 export function HeroHeadings() {
   const { scrollYProgress } = useScroll();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Use desktop values for SSR, update to mobile on client
   const leftXRaw = useTransform(
@@ -24,6 +32,19 @@ export function HeroHeadings() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col items-center w-full overflow-visible relative gap-1 z-10">
+        <h1 className="heading-gradient-black heading-1 w-fit text-center text-[clamp(2.5rem,10vw,4rem)]">
+          We Turn Information
+        </h1>
+        <h1 className="heading-gradient-grey heading-1 w-fit text-center text-[clamp(2.5rem,10vw,4rem)]">
+          Into Performance
+        </h1>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center w-full overflow-visible relative gap-1 z-10">
