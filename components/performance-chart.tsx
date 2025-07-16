@@ -485,6 +485,17 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
     }
   }, [currentPerformance, selectedPeriod]);
 
+  // Update series colors when strategy changes
+  useEffect(() => {
+    if (strategySeriesRef.current) {
+      strategySeriesRef.current.applyOptions({
+        lineColor: colors.line,
+        topColor: colors.top,
+        bottomColor: colors.bottom,
+      });
+    }
+  }, [colors]);
+
   // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -772,7 +783,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
             <div className="text-white text-sm font-medium mb-2">{tooltipData.date}</div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 bg-sky-500 rounded-full"></div>
+                <div className="w-3 h-3 rounded-full" style={{backgroundColor: colors.dot}}></div>
                 <span className="text-neutral-300">{strategyInfo.fullTitle}:</span>
                 <span className="text-white font-medium">{formatCurrency(tooltipData.strategyValue)}</span>
               </div>
@@ -865,7 +876,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
                 : '—'}
             </span>
 
-            <h3 className="heading-3 text-white bg-sky-500/30 rounded-sm px-2 py-1">
+            <h3 className="heading-3 text-white rounded-sm px-2 py-1" style={{backgroundColor: colors.top}}>
               <NumberFlow
                 key={`end-value-${selectedPeriod}-${strategy}`}
                 value={currentPerformance!.currentValue}

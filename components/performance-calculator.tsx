@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Drawer, DrawerTrigger, DrawerContent } from '@/components/ui/drawer';
 import { Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -76,6 +78,170 @@ export default function PerformanceCalculator() {
     setHoverCardOpen(false);
   };
 
+  const calculatorCard = (
+    <div className="bg-neutral-800 rounded-xl p-4 md:p-6 w-full">
+      <div className="space-y-6">
+        
+        {/* Strategy Select */}
+        <div>
+          <label className="text-neutral-400 text-sm font-medium mb-3 block">
+            Strategy
+          </label>
+          <Select 
+            value={selectedStrategy} 
+            onValueChange={setSelectedStrategy}
+            onOpenChange={setStrategySelectOpen}
+          >
+            <SelectTrigger 
+              className="w-full h-12 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600 transition-all duration-300 ease-in-out"
+              onMouseEnter={() => !strategySelectOpen && onMouseEnter('hover')}
+              onMouseLeave={() => !strategySelectOpen && onMouseLeave()}
+            >
+              <SelectValue className="transition-opacity duration-200" />
+            </SelectTrigger>
+            <SelectContent className="bg-neutral-700 border-neutral-600">
+              {strategies.map((strategy) => (
+                <SelectItem
+                  key={strategy}
+                  value={strategy}
+                  className="text-white hover:bg-neutral-600 hover:text-white focus:bg-neutral-600 focus:text-white cursor-pointer"
+                >
+                  {strategy}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Initial Investment */}
+        <div>
+          <label className="text-neutral-400 text-sm font-medium mb-3 block">
+            Initial Investment
+          </label>
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white text-lg font-medium z-10">
+              $
+            </div>
+            <Input
+              value={initialInvestment}
+              onChange={handleInvestmentChange}
+              className="h-12 bg-neutral-700 border-neutral-600 text-white pl-8 pr-4 text-lg font-medium placeholder:text-neutral-400 focus:border-sky-400 focus:ring-sky-400/20 hover:bg-neutral-600 transition-colors duration-200"
+              placeholder="1,000"
+              onMouseEnter={() => onMouseEnter('hover')}
+              onMouseLeave={onMouseLeave}
+            />
+          </div>
+          <div className="flex items-center justify-end mt-2">
+            <div className="flex items-center gap-1 text-neutral-400 text-sm">
+              <span>0.20% Fee</span>
+              <HoverCard 
+                open={hoverCardOpen} 
+                onOpenChange={setHoverCardOpen}
+              >
+                <HoverCardTrigger asChild>
+                  <button
+                    className="text-neutral-500 hover:text-neutral-300 transition-colors"
+                    onClick={handleInfoClick}
+                    onMouseEnter={() => onMouseEnter('hover')}
+                    onMouseLeave={onMouseLeave}
+                  >
+                    <Info size={14} />
+                  </button>
+                </HoverCardTrigger>
+                <HoverCardContent 
+                  className="bg-neutral-800 border-neutral-600 text-white w-80"
+                  side="top"
+                  align="end"
+                  sideOffset={8}
+                  onMouseLeave={handleHoverCardMouseLeave}
+                >
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-white">Fee Structure</h4>
+                    <p className="text-sm text-neutral-300">
+                      Our transparent 0.20% annual management fee is calculated on your total assets under management. 
+                      This competitive rate includes all trading, research, and portfolio management services.
+                    </p>
+                    <div className="pt-2 border-t border-neutral-600">
+                      <p className="text-xs text-neutral-400">
+                        Industry average: 1-2% annually
+                      </p>
+                    </div>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
+          </div>
+        </div>
+
+        {/* Risk Profile and Account Type Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Risk Profile */}
+          <div>
+            <label className="text-neutral-400 text-sm font-medium mb-3 block">
+              Risk Profile
+            </label>
+            <Select 
+              value={selectedRiskProfile} 
+              onValueChange={setSelectedRiskProfile}
+              onOpenChange={setRiskSelectOpen}
+            >
+              <SelectTrigger 
+                className="w-full h-12 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600 transition-colors duration-200"
+                onMouseEnter={() => !riskSelectOpen && onMouseEnter('hover')}
+                onMouseLeave={() => !riskSelectOpen && onMouseLeave()}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-neutral-700 border-neutral-600">
+                {riskProfiles.map((profile) => (
+                  <SelectItem
+                    key={profile}
+                    value={profile}
+                    className="text-white hover:bg-neutral-600 hover:text-white focus:bg-neutral-600 focus:text-white cursor-pointer"
+                  >
+                    {profile}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Account Type */}
+          <div>
+            <label className="text-neutral-400 text-sm font-medium mb-3 block">
+              Account Type
+            </label>
+            <Select 
+              value={selectedAccountType} 
+              onValueChange={setSelectedAccountType}
+              onOpenChange={setAccountSelectOpen}
+            >
+              <SelectTrigger 
+                className="w-full h-12 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600 transition-colors duration-200"
+                onMouseEnter={() => !accountSelectOpen && onMouseEnter('hover')}
+                onMouseLeave={() => !accountSelectOpen && onMouseLeave()}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-neutral-700 border-neutral-600">
+                {accountTypes.map((type) => (
+                  <SelectItem
+                    key={type}
+                    value={type}
+                    className="text-white hover:bg-neutral-600 hover:text-white focus:bg-neutral-600 focus:text-white cursor-pointer"
+                  >
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <section className="flex flex-col items-center justify-center w-full h-fit px-4 py-8 lg:px-8 lg:py-12 bg-neutral-900">
       <div className="flex flex-col items-center justify-center w-full h-fit max-w-[1480px]">
@@ -96,177 +262,34 @@ export default function PerformanceCalculator() {
           {/* Performance Chart - First on mobile, right on desktop */}
           <div className="w-full h-fit order-1 lg:order-2">
             <PerformanceChart strategy={selectedStrategy} initialInvestment={initialInvestment} />
+
+            {/* Mobile/Tablet: Calculator Drawer Trigger under legend */}
+            <div className="lg:hidden mt-4 flex justify-center w-full">
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button variant="outline" className="w-full max-w-[320px] border-neutral-600 text-white hover:bg-neutral-800 px-4 py-2 rounded-full">
+                    Open Calculator
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="bg-neutral-900 border-t border-neutral-700 p-4 rounded-t-2xl max-h-[80vh] overflow-auto">
+                  {calculatorCard}
+                </DrawerContent>
+              </Drawer>
+            </div>
           </div>
 
-          {/* Calculator and Strategy Card - Second on mobile, left on desktop */}
-          <div className="flex flex-col w-full lg:max-w-[400px] gap-6 order-2 lg:order-1">
-            
+          {/* Desktop / Tablet: Calculator & Strategy card */}
+          <div className="hidden lg:flex flex-col w-full lg:max-w-[400px] gap-6 order-2 lg:order-1">
             {/* Calculator Card */}
-            <div className="bg-neutral-800 rounded-xl p-4 md:p-6 w-full">
-              <div className="space-y-6">
-                
-                {/* Strategy Select */}
-                <div>
-                  <label className="text-neutral-400 text-sm font-medium mb-3 block">
-                    Strategy
-                  </label>
-                  <Select 
-                    value={selectedStrategy} 
-                    onValueChange={setSelectedStrategy}
-                    onOpenChange={setStrategySelectOpen}
-                  >
-                    <SelectTrigger 
-                      className="w-full h-12 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600 transition-all duration-300 ease-in-out"
-                      onMouseEnter={() => !strategySelectOpen && onMouseEnter('hover')}
-                      onMouseLeave={() => !strategySelectOpen && onMouseLeave()}
-                    >
-                      <SelectValue className="transition-opacity duration-200" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-neutral-700 border-neutral-600">
-                      {strategies.map((strategy) => (
-                        <SelectItem
-                          key={strategy}
-                          value={strategy}
-                          className="text-white hover:bg-neutral-600 hover:text-white focus:bg-neutral-600 focus:text-white cursor-pointer"
-                        >
-                          {strategy}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Initial Investment */}
-                <div>
-                  <label className="text-neutral-400 text-sm font-medium mb-3 block">
-                    Initial Investment
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white text-lg font-medium z-10">
-                      $
-                    </div>
-                    <Input
-                      value={initialInvestment}
-                      onChange={handleInvestmentChange}
-                      className="h-12 bg-neutral-700 border-neutral-600 text-white pl-8 pr-4 text-lg font-medium placeholder:text-neutral-400 focus:border-sky-400 focus:ring-sky-400/20 hover:bg-neutral-600 transition-colors duration-200"
-                      placeholder="1,000"
-                      onMouseEnter={() => onMouseEnter('hover')}
-                      onMouseLeave={onMouseLeave}
-                    />
-                  </div>
-                  <div className="flex items-center justify-end mt-2">
-                    <div className="flex items-center gap-1 text-neutral-400 text-sm">
-                      <span>0.20% Fee</span>
-                      <HoverCard 
-                        open={hoverCardOpen} 
-                        onOpenChange={setHoverCardOpen}
-                      >
-                        <HoverCardTrigger asChild>
-                          <button
-                            className="text-neutral-500 hover:text-neutral-300 transition-colors"
-                            onClick={handleInfoClick}
-                            onMouseEnter={() => onMouseEnter('hover')}
-                            onMouseLeave={onMouseLeave}
-                          >
-                            <Info size={14} />
-                          </button>
-                        </HoverCardTrigger>
-                        <HoverCardContent 
-                          className="bg-neutral-800 border-neutral-600 text-white w-80"
-                          side="top"
-                          align="end"
-                          sideOffset={8}
-                          onMouseLeave={handleHoverCardMouseLeave}
-                        >
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-white">Fee Structure</h4>
-                            <p className="text-sm text-neutral-300">
-                              Our transparent 0.20% annual management fee is calculated on your total assets under management. 
-                              This competitive rate includes all trading, research, and portfolio management services.
-                            </p>
-                            <div className="pt-2 border-t border-neutral-600">
-                              <p className="text-xs text-neutral-400">
-                                Industry average: 1-2% annually
-                              </p>
-                            </div>
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Risk Profile and Account Type Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  
-                  {/* Risk Profile */}
-                  <div>
-                    <label className="text-neutral-400 text-sm font-medium mb-3 block">
-                      Risk Profile
-                    </label>
-                    <Select 
-                      value={selectedRiskProfile} 
-                      onValueChange={setSelectedRiskProfile}
-                      onOpenChange={setRiskSelectOpen}
-                    >
-                      <SelectTrigger 
-                        className="w-full h-12 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600 transition-colors duration-200"
-                        onMouseEnter={() => !riskSelectOpen && onMouseEnter('hover')}
-                        onMouseLeave={() => !riskSelectOpen && onMouseLeave()}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-neutral-700 border-neutral-600">
-                        {riskProfiles.map((profile) => (
-                          <SelectItem
-                            key={profile}
-                            value={profile}
-                            className="text-white hover:bg-neutral-600 hover:text-white focus:bg-neutral-600 focus:text-white cursor-pointer"
-                          >
-                            {profile}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Account Type */}
-                  <div>
-                    <label className="text-neutral-400 text-sm font-medium mb-3 block">
-                      Account Type
-                    </label>
-                    <Select 
-                      value={selectedAccountType} 
-                      onValueChange={setSelectedAccountType}
-                      onOpenChange={setAccountSelectOpen}
-                    >
-                      <SelectTrigger 
-                        className="w-full h-12 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600 transition-colors duration-200"
-                        onMouseEnter={() => !accountSelectOpen && onMouseEnter('hover')}
-                        onMouseLeave={() => !accountSelectOpen && onMouseLeave()}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-neutral-700 border-neutral-600">
-                        {accountTypes.map((type) => (
-                          <SelectItem
-                            key={type}
-                            value={type}
-                            className="text-white hover:bg-neutral-600 hover:text-white focus:bg-neutral-600 focus:text-white cursor-pointer"
-                          >
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            {calculatorCard}
             {/* Strategy Details Card */}
             <StrategyCard strategy={selectedStrategy} />
+          </div>
 
+          {/* Mobile Strategy card below chart */}
+          <div className="lg:hidden mt-6 order-3">
+            <StrategyCard strategy={selectedStrategy} />
+           
           </div>
 
         </div>
