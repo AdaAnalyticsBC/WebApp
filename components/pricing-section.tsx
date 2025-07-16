@@ -11,7 +11,7 @@ export default function PricingSection() {
   const clientFeePeriod = isAnnual ? "/year" : "/month";
 
   return (
-    <section className="flex flex-col items-center justify-center w-full h-fit px-4 py-8 lg:px-8 lg:py-12 bg-neutral-900">
+    <section className="flex flex-col items-center justify-center w-full h-fit px-4 py-12 lg:px-8 lg:py-16 bg-neutral-900">
 
       <div className="flex flex-col items-center justify-center w-full max-w-[1480px]">
         {/* Header */}

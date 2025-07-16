@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import NumberFlow from "@number-flow/react";
 import { motion } from 'motion/react';
@@ -286,6 +287,33 @@ export const basePerformanceData = {
   }
 };
 
+export const strategyColors: Record<string, { line: string; top: string; bottom: string; dot: string }> = {
+  'Luthor - Flagship (US Stocks)': {
+    line: '#0ea5e9',
+    top: 'rgba(14,165,233,0.4)',
+    bottom: 'rgba(14,165,233,0.0)',
+    dot: '#0ea5e9'
+  },
+  'Lex - Defensive Strategy': {
+    line: '#f97316',
+    top: 'rgba(249,115,22,0.4)',
+    bottom: 'rgba(249,115,22,0.0)',
+    dot: '#f97316'
+  },
+  'Clark - Growth Strategy': {
+    line: '#3b82f6',
+    top: 'rgba(59,130,246,0.4)',
+    bottom: 'rgba(59,130,246,0.0)',
+    dot: '#3b82f6'
+  },
+  'Diana - International Strategy': {
+    line: '#6366f1',
+    top: 'rgba(99,102,241,0.4)',
+    bottom: 'rgba(99,102,241,0.0)',
+    dot: '#6366f1'
+  }
+};
+
 interface PerformanceChartProps {
   strategy: string;
   initialInvestment: string;
@@ -302,7 +330,14 @@ function MetricItem({ label, value }: { label: string; value: string }) {
 }
 
 export function PerformanceChart({ strategy, initialInvestment }: PerformanceChartProps) {
+  // Shared animation settings for NumberFlow components
+  const numberFlowProps = {
+    transformTiming: { duration: 1000, easing: "ease-out" },
+    spinTiming: { duration: 1000, easing: "ease-out" },
+    opacityTiming: { duration: 600,  easing: "ease-out" },
+  };
   const strategyInfo = strategyDetails[strategy as keyof typeof strategyDetails];
+  const colors = strategyColors[strategy] ?? strategyColors['Luthor - Flagship (US Stocks)'];
   const basePerformance = basePerformanceData[strategy as keyof typeof basePerformanceData];
   const { onMouseEnter, onMouseLeave } = useCursorHover();
   
@@ -435,7 +470,13 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
   
   // State for current performance value that updates with timeframe
   const [mainValue, setMainValue] = useState(basePerformance?.currentValue || 0);
-  
+  const [hoverPrice, setHoverPrice] = useState<number|null>(null);
+
+  const startOfWindow = filteredData.strategy.length? filteredData.strategy[0].value : mainValue;
+  const displayValue = hoverPrice ?? mainValue;
+  const displayChange = displayValue - startOfWindow;
+  const displayChangePct = startOfWindow? (displayChange/startOfWindow)*100:0;
+
   // Update main value when dynamic performance changes
   useEffect(() => {
     if (currentPerformance) {
@@ -448,6 +489,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
@@ -461,7 +503,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
         horzLines: { visible: false },
       },
       crosshair: {
-        mode: 1,
+        mode: 0, // smooth
         vertLine: {
           color: '#a3a3a3',
           width: 1,
@@ -471,19 +513,17 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           visible: false,
         },
       },
-      rightPriceScale: {
-        visible: true,
-        borderVisible: false,
-        scaleMargins: {
-          top: 0.2, // add headroom so line doesn’t touch top
-          bottom: 0.1,
-        },
-        entireTextOnly: false,
-        ticksVisible: true,
-        minimumWidth: 80,
-        autoScale: true,
-        mode: 0, // Normal price scale mode
-      },
+      rightPriceScale: isMobile
+        ? { visible: false }
+        : {
+            visible: true,
+            borderVisible: false,
+            scaleMargins: { top: 0.2, bottom: 0.1 },
+            entireTextOnly: true,
+            ticksVisible: true,
+            autoScale: true,
+            mode: 0,
+          },
       leftPriceScale: {
         visible: false,
       },
@@ -499,9 +539,9 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
 
     // Create strategy area series (sky-500 color)
     const strategySeries = chart.addSeries(AreaSeries, {
-      lineColor: '#0ea5e9',
-      topColor: 'rgba(14, 165, 233, 0.4)',
-      bottomColor: 'rgba(14, 165, 233, 0.0)',
+      lineColor: colors.line,
+      topColor: colors.top,
+      bottomColor: colors.bottom,
       lineWidth: 2,
       crosshairMarkerVisible: false,
       lastValueVisible: false,
@@ -535,8 +575,18 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
+        const mobile = window.innerWidth < 640;
         chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
+          rightPriceScale: mobile
+            ? { visible: false }
+            : {
+                visible: true,
+                borderVisible: false,
+                scaleMargins: { top: 0.2, bottom: 0.1 },
+                entireTextOnly: true,
+                ticksVisible: true,
+              },
         });
       }
     };
@@ -573,6 +623,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           x: param.point.x,
           y: param.point.y,
         });
+        setHoverPrice(strategyPrice.value || strategyPrice);
       }
     };
 
@@ -584,6 +635,9 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
       }
     };
   }, []);
+
+  // Reset hover when timeframe changes
+  useEffect(()=>{ setHoverPrice(null); }, [selectedPeriod]);
   
   if (!strategyInfo || !basePerformance) return null;
 
@@ -599,12 +653,12 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          <motion.div 
-            className="w-12 h-12 max-w-12 max-h-12 bg-gradient-to-br from-purple-400 to-blue-400 rounded-md flex items-center justify-center"
+          <motion.div
+            className="w-12 h-12 rounded-md overflow-hidden"
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.2 }}
           >
-            <span className="text-lg">💎</span>
+            <Image src={strategyInfo.logo} alt={`${strategyInfo.name} logo`} width={48} height={48} className="object-cover w-12 h-12" />
           </motion.div>
           <motion.h2 
             className="text-white text-xl font-semibold"
@@ -622,10 +676,11 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
             <span className="text-white text-2xl">$</span>
             <NumberFlow
               key={`value-${selectedPeriod}-${strategy}`}
-              value={mainValue}
+              value={displayValue}
               className="number-mono text-white text-3xl lg:text-4xl xl:text-5xl font-medium"
               locales="en-US"
               format={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }}
+              {...numberFlowProps}
             />
           </div>
         </div>
@@ -661,13 +716,14 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           >
             <NumberFlow
               key={`change-amount-${selectedPeriod}-${strategy}`}
-              value={Math.abs((currentPerformance)!.change)}
+              value={Math.abs(displayChange)}
               className="inline"
               locales="en-US"
               format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
+              {...numberFlowProps}
             />
             {' '}
-            ({(currentPerformance)!.isPositive ? '+' : ''}{(currentPerformance)!.changePercent.toFixed(1)}%)
+            (<NumberFlow value={Math.abs(displayChangePct)} className="inline" format={{ maximumFractionDigits:1 }} {...numberFlowProps} />%)
           </motion.span>
           <span className="text-neutral-400 text-sm ml-2">
             Hypothetical Gain/Loss
@@ -696,9 +752,12 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
         />
         
         {/* Chart Container */}
-        <div 
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className={cn("flex-1 relative z-10", "sm:mx-0 -mx-4")}
           ref={chartContainerRef}
-          className="flex-1 relative z-10"
         />
         
         {/* Tooltip */}
@@ -730,7 +789,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
 
       {/* Time Filter and Legend Row */}
       <motion.div 
-        className="flex flex-col w-full md:flex-row md:justify-start items-start gap-4 mt-4"
+        className="flex flex-col w-full md:flex-row md:justify-between items-start md:items-center gap-4 mt-4"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.3 }}
@@ -756,9 +815,9 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 md:gap-6 ml-auto my-auto">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6 my-6  md:my-0">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 md:w-4 md:h-4 bg-sky-500 rounded-full"></div>
+            <div className="w-3 h-3 md:w-4 md:h-4 rounded-full" style={{backgroundColor: colors.dot}}></div>
             <span className="text-neutral-300 text-sm md:text-base">{strategyInfo.fullTitle}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -790,6 +849,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
                 value={filteredData.strategy.length > 0 ? filteredData.strategy[0].value : (parseFloat(initialInvestment.replace(/,/g, '')) || 1000)}
                 locales="en-US"
                 format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
+                {...numberFlowProps}
               />
             </h3>
           </div>
@@ -811,6 +871,7 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
                 value={currentPerformance!.currentValue}
                 locales="en-US"
                 format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
+                {...numberFlowProps}
               />
             </h3>
           </div>

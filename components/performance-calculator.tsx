@@ -78,7 +78,7 @@ export default function PerformanceCalculator() {
 
   return (
     <section className="flex flex-col items-center justify-center w-full h-fit px-4 py-8 lg:px-8 lg:py-12 bg-neutral-900">
-      <div className="flex flex-col items-center justify-center w-full max-w-[1480px]">
+      <div className="flex flex-col items-center justify-center w-full h-fit max-w-[1480px]">
         {/* Header */}
         <div className="flex flex-col items-center justify-center w-full max-w-[800px] mb-8">
           <span className="tag-1 text-neutral-500 text-center mb-3">[ PERFORMANCE ]</span>

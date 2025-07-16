@@ -46,7 +46,7 @@ export default function Home() {
 
         {/* W H Y   A D A  &   P E R F O R M A N C E   S E C T I O N */}
         <DarkAreaDetector isDark={true}>
-          <section className="relative flex flex-col items-center bg-neutral-900 justify-center px-4 py-8 lg:px-8 lg:py-12 gap-8 w-full h-fit">
+          <section className="relative flex flex-col items-center bg-neutral-900 justify-center px-4 py-12 lg:px-8 lg:py-16 gap-8 w-full h-fit">
 
             {/* Container */}
             <div className="flex flex-col items-center justify-center w-full h-fit gap-8 max-w-[1480px]">

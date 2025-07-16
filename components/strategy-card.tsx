@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Strategy details data
@@ -8,18 +9,20 @@ export const strategyDetails = {
   'Luthor - Flagship (US Stocks)': {
     name: 'Luthor',
     fullTitle: 'Luthor - Flagship (US Stocks)',
+    logo: '/Luthor.webp',
     description: "Luthor is Ada Analytics' flagship equity strategy—an AI-driven portfolio engine that fuses real-time congressional trading disclosures, insider 13F filings, and social sentiment signals into a single dynamic market view. By weighting positions according to the strength, recency, and alignment of influential activity, Luthor seeks to front-run shifts in institutional conviction while damping headline noise through adaptive risk controls. In short: it doesn't just trade—it strategizes.",
     dataSources: [
       { name: 'Reddit.com', icon: '🔴' },
       { name: 'U.S Securities and Exchange Commission', icon: '🏛️' },
       { name: 'QuiverQuant', icon: '📊' },
-      { name: 'X.com', icon: '❌' },
+      { name: 'X.com', icon: '🐦' },
       { name: 'Google Trends', icon: '📈' }
     ]
   },
   'Lex - Defensive Strategy': {
     name: 'Lex',
     fullTitle: 'Lex - Defensive Strategy',
+    logo: '/Lex.webp',
     description: "Lex is Ada Analytics' defensive equity strategy—a risk-first portfolio engine designed for capital preservation and steady growth. By analyzing volatility patterns, credit spreads, and macro-economic indicators, Lex identifies undervalued dividend aristocrats and quality companies with strong balance sheets. The strategy employs dynamic hedging techniques and sector rotation to weather market downturns while capturing upside during stable periods. Think of it as your portfolio's insurance policy that actually pays dividends.",
     dataSources: [
       { name: 'Federal Reserve Economic Data', icon: '🏦' },
@@ -32,6 +35,7 @@ export const strategyDetails = {
   'Clark - Growth Strategy': {
     name: 'Clark',
     fullTitle: 'Clark - Growth Strategy',
+    logo: '/Clark.webp',
     description: "Clark is Ada Analytics' high-growth equity strategy—an innovation-focused portfolio engine that targets disruptive companies and emerging technologies. By monitoring patent filings, venture capital flows, startup accelerator programs, and technological breakthrough signals, Clark identifies tomorrow's market leaders before they become household names. The strategy emphasizes companies with exponential revenue growth potential, strong moats, and visionary leadership teams. It's not just about finding growth—it's about finding the next Tesla.",
     dataSources: [
       { name: 'Crunchbase', icon: '🚀' },
@@ -44,6 +48,7 @@ export const strategyDetails = {
   'Diana - International Strategy': {
     name: 'Diana',
     fullTitle: 'Diana - International Strategy',
+    logo: '/Diana.webp',
     description: "Diana is Ada Analytics' global equity strategy—a geographically diversified portfolio engine that capitalizes on international market inefficiencies and cross-border opportunities. By analyzing currency flows, sovereign risk indicators, international trade data, and regional economic cycles, Diana identifies undervalued markets and companies poised to benefit from global trends. The strategy provides exposure to emerging markets, developed international markets, and currency hedging to optimize risk-adjusted returns across time zones.",
     dataSources: [
       { name: 'International Monetary Fund', icon: '🌍' },
@@ -80,12 +85,12 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
         >
           {/* Strategy Header with Icon */}
           <div className="flex items-center gap-4">
-            <motion.div 
-              className="w-12 h-12 max-w-12 max-h-12 bg-gradient-to-br from-purple-400 to-blue-400 rounded-md flex items-center justify-center"
+            <motion.div
+              className="w-12 h-12 rounded-md overflow-hidden"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
-              <span className="text-lg">💎</span>
+              <Image src={strategyInfo.logo} alt={`${strategyInfo.name} logo`} width={48} height={48} className="object-cover w-12 h-12" />
             </motion.div>
             <motion.h3 
               className="text-white text-xl font-semibold"
@@ -109,36 +114,63 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
 
           {/* Data Sources */}
           <div>
-            <motion.h4 
-              className="text-neutral-400 text-xs font-medium mb-3 uppercase tracking-wider"
+            <motion.h4
+              className="text-white text-xs font-semibold mb-3 uppercase tracking-tight"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.2 }}
             >
               Data Sources
             </motion.h4>
-            <motion.div 
+
+            <motion.div
               className="space-y-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25, duration: 0.25 }}
             >
-              {strategyInfo.dataSources.map((source, index) => (
-                <motion.div
-                  key={`${strategy}-${source.name}`} // Unique key including strategy
-                  className="flex items-center gap-3 text-sm text-neutral-400"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ 
-                    delay: 0.3 + (index * 0.05), 
-                    duration: 0.2,
-                    ease: "easeOut"
-                  }}
-                >
-                  <span className="text-base">{source.icon}</span>
-                  <span>{source.name}</span>
-                </motion.div>
-              ))}
+              {strategyInfo.dataSources.map((source, index) => {
+                const domainMap: Record<string,string> = {
+                  'Reddit.com':'reddit.com',
+                  'U.S Securities and Exchange Commission':'sec.gov',
+                  'QuiverQuant':'quiverquant.com',
+                  'X.com':'twitter.com',
+                  'Google Trends':'trends.google.com',
+                  'Federal Reserve Economic Data':'fred.stlouisfed.org',
+                  'Bloomberg Terminal':'bloomberg.com',
+                  'S&P Global Market Intelligence':'spglobal.com',
+                  'Morningstar Direct':'morningstar.com',
+                  'CBOE Volatility Index':'cboe.com',
+                  'Crunchbase':'crunchbase.com',
+                  'PitchBook':'pitchbook.com',
+                  'IEEE Xplore':'ieee.org',
+                  'AngelList':'angel.co',
+                  'Product Hunt':'producthunt.com',
+                  'International Monetary Fund':'imf.org',
+                  'World Bank Data':'worldbank.org',
+                  'MSCI Global Indices':'msci.com',
+                  'Trading Economics':'tradingeconomics.com',
+                  'OECD Data':'oecd.org',
+                };
+                const domain = domainMap[source.name];
+                const logoUrl = domain ? `https://logo.clearbit.com/${domain}` : '';
+                return (
+                  <motion.div
+                    key={`${strategy}-${source.name}`}
+                    className="flex items-center gap-3 text-sm text-neutral-400"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.05, duration: 0.2, ease: 'easeOut' }}
+                  >
+                    {logoUrl ? (
+                      <Image src={logoUrl} alt={source.name} width={32} height={32} className="rounded-full object-contain" />
+                    ) : (
+                      <span className="text-base">{source.icon}</span>
+                    )}
+                    <span>{source.name}</span>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </div>
         </motion.div>
