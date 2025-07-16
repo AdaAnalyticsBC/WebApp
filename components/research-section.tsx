@@ -221,7 +221,7 @@ export default function ResearchSection() {
             <h2 className="heading-2 text-black text-left">Latest Research</h2>
           </div>
           
-          <Button variant="outline" className="hidden md:flex px-6 py-3">
+          <Button variant="outline" className="hidden button-2 md:flex px-6 py-3">
             VIEW ALL
           </Button>
         </div>

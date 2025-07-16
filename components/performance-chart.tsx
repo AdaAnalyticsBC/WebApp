@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import NumberFlow from "@number-flow/react";
 import { motion } from 'motion/react';
@@ -9,30 +9,41 @@ import { DotPattern } from './magicui/dot-pattern';
 import { cn } from "@/lib/utils";
 import { useCursorHover } from './custom-cursor';
 import Link from 'next/link';
+import { createChart, ColorType, IChartApi, ISeriesApi, UTCTimestamp, AreaSeries, LineSeries } from 'lightweight-charts';
+
+// Seeded random number generator for consistent server/client rendering
+function seededRandom(seed: number) {
+  let state = seed;
+  return function() {
+    state = (state * 9301 + 49297) % 233280;
+    return state / 233280;
+  };
+}
 
 // Time series data for charts (5 years of monthly data)
 export const generateTimeSeriesData = (strategy: string, initialValue: number = 1000) => {
   const startDate = new Date('2020-01-01');
-  const endDate = new Date('2024-12-31');
+  const endDate = new Date(); // through today
   const data = [];
   
   // Base growth parameters for each strategy
   const strategyParams = {
     'Luthor - Flagship (US Stocks)': { 
-      baseGrowth: 0.025, volatility: 0.08, trendStrength: 1.2 
+      baseGrowth: 0.025, volatility: 0.08, trendStrength: 1.2, seed: 12345
     },
     'Lex - Defensive Strategy': { 
-      baseGrowth: 0.008, volatility: 0.03, trendStrength: 0.6 
+      baseGrowth: 0.008, volatility: 0.03, trendStrength: 0.6, seed: 23456
     },
     'Clark - Growth Strategy': { 
-      baseGrowth: 0.035, volatility: 0.12, trendStrength: 1.8 
+      baseGrowth: 0.035, volatility: 0.12, trendStrength: 1.8, seed: 34567
     },
     'Diana - International Strategy': { 
-      baseGrowth: 0.015, volatility: 0.06, trendStrength: 0.9 
+      baseGrowth: 0.015, volatility: 0.06, trendStrength: 0.9, seed: 45678
     }
   };
 
   const params = strategyParams[strategy as keyof typeof strategyParams];
+  const random = seededRandom(params.seed);
   let currentValue = initialValue;
   let currentDate = new Date(startDate);
 
@@ -41,18 +52,18 @@ export const generateTimeSeriesData = (strategy: string, initialValue: number = 
     // Add some realistic market movements
     const monthsElapsed = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
     const baseReturn = params.baseGrowth * (1 + Math.sin(monthsElapsed * 0.1) * 0.3);
-    const volatilityReturn = (Math.random() - 0.5) * params.volatility;
+    const volatilityReturn = (random() - 0.5) * params.volatility;
     const trendReturn = baseReturn * params.trendStrength;
     
     currentValue *= (1 + trendReturn + volatilityReturn);
     
     data.push({
-      time: currentDate.toISOString().split('T')[0],
+      time: (currentDate.getTime() / 1000) as UTCTimestamp,
       value: parseFloat(currentValue.toFixed(2))
     });
 
-    // Move to next month
-    currentDate.setMonth(currentDate.getMonth() + 1);
+    // Advance one week
+    currentDate.setDate(currentDate.getDate() + 7);
   }
 
   return data;
@@ -61,9 +72,11 @@ export const generateTimeSeriesData = (strategy: string, initialValue: number = 
 // Generate SPY comparison data (more conservative baseline)
 export const generateSPYData = (initialValue: number = 1000) => {
   const startDate = new Date('2020-01-01');
-  const endDate = new Date('2024-12-31');
+  const endDate = new Date(); // through today
   const data = [];
   
+  // Use consistent seed for SPY data
+  const random = seededRandom(98765);
   let currentValue = initialValue;
   let currentDate = new Date(startDate);
 
@@ -71,20 +84,142 @@ export const generateSPYData = (initialValue: number = 1000) => {
     const monthsElapsed = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30);
     // SPY historical average ~10% annually, with realistic volatility
     const baseReturn = 0.008; // ~10% annually
-    const volatilityReturn = (Math.random() - 0.5) * 0.04;
+    const volatilityReturn = (random() - 0.5) * 0.04;
     const cyclicalReturn = Math.sin(monthsElapsed * 0.05) * 0.002;
     
     currentValue *= (1 + baseReturn + volatilityReturn + cyclicalReturn);
     
     data.push({
-      time: currentDate.toISOString().split('T')[0],
+      time: (currentDate.getTime() / 1000) as UTCTimestamp,
       value: parseFloat(currentValue.toFixed(2))
     });
 
-    currentDate.setMonth(currentDate.getMonth() + 1);
+    currentDate.setDate(currentDate.getDate() + 7); // weekly
   }
 
   return data;
+};
+
+// Time period options
+const TIME_PERIODS = [
+  { key: '1M', label: '1M', months: 1 },
+  { key: '6M', label: '6M', months: 6 },
+  { key: 'YTD', label: 'YTD', months: null }, // Special case for year-to-date
+  { key: '1Y', label: '1Y', months: 12 },
+  { key: '3Y', label: '3Y', months: 36 },
+  { key: '5Y', label: '5Y', months: 60 }
+];
+
+// Helper function to filter data by time period
+const filterDataByPeriod = (data: any[], period: string) => {
+  if (period === '5Y') return data;
+  
+  // “Now” = today because data extends to today
+  const endDate = new Date();
+  let startDate: Date;
+  
+  if (period === 'YTD') {
+    startDate = new Date(endDate.getFullYear(), 0, 1);
+  } else {
+    const periodConfig = TIME_PERIODS.find(p => p.key === period);
+    if (!periodConfig?.months) return data;
+    
+    startDate = new Date(endDate);
+    startDate.setMonth(startDate.getMonth() - periodConfig.months);
+  }
+  
+  const startTimestamp = startDate.getTime() / 1000;
+  return data.filter(item => item.time >= startTimestamp);
+};
+
+// Helper function to format currency for y-axis
+const formatCurrency = (value: number) => {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`;
+  } else {
+    return `$${value.toFixed(0)}`;
+  }
+};
+
+// Helper function to format date for tooltip
+const formatTooltipDate = (timestamp: UTCTimestamp) => {
+  const date = new Date(timestamp * 1000);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear().toString().slice(-2);
+  return `${month} ${year}`;
+};
+
+/* ---------- NEW HELPERS ---------- */
+
+// Human‑friendly "YYYY" label for cards / axes
+const formatDateLabel = (d: Date): string =>
+  d.toLocaleDateString('en-US', { year: 'numeric' });
+
+// Simplified beta calculation: cov(strategy, spy) / var(spy)
+const computeBeta = (
+  strat: { value: number }[],
+  spy: { value: number }[]
+): number => {
+  if (strat.length < 2 || spy.length < 2) return NaN;
+
+  const sRet: number[] = [];
+  const bRet: number[] = [];
+
+  for (let i = 1; i < Math.min(strat.length, spy.length); i++) {
+    sRet.push((strat[i].value - strat[i - 1].value) / strat[i - 1].value);
+    bRet.push((spy[i].value - spy[i - 1].value) / spy[i - 1].value);
+  }
+
+  const n = sRet.length;
+  const meanS = sRet.reduce((a, b) => a + b, 0) / n;
+  const meanB = bRet.reduce((a, b) => a + b, 0) / n;
+
+  let cov = 0,
+    varB = 0;
+  for (let i = 0; i < n; i++) {
+    cov += (sRet[i] - meanS) * (bRet[i] - meanB);
+    varB += Math.pow(bRet[i] - meanB, 2);
+  }
+  cov /= n;
+  varB /= n;
+
+  return varB === 0 ? NaN : cov / varB;
+};
+
+// ---------- metrics helper ----------
+const computeMetrics = (s: { value:number }[], b: { value:number }[]) => {
+  if (s.length < 2) return {
+    cumulativeReturn: NaN, annualizedReturn: NaN, standardDeviation: NaN,
+    maxDrawdown: NaN, sharpeRatio: NaN, beta: NaN,
+  };
+
+  const sRet:number[] = [], bRet:number[] = [];
+  let peak = s[0].value, maxDD = 0;
+  for (let i=1;i<s.length;i++){
+    const sr = (s[i].value-s[i-1].value)/s[i-1].value;
+    const br = (b[i].value-b[i-1].value)/b[i-1].value;
+    sRet.push(sr); bRet.push(br);
+    peak = Math.max(peak,s[i].value);
+    maxDD = Math.min(maxDD,(s[i].value-peak)/peak);
+  }
+  const n = sRet.length;
+  const mean = sRet.reduce((a,c)=>a+c,0)/n;
+  const std  = Math.sqrt(sRet.reduce((a,r)=>a+(r-mean)**2,0)/n);
+  const years = n/52;
+  const cum = s[s.length-1].value/s[0].value-1;
+  const ann = Math.pow(1+cum,1/years)-1;
+  const sharpe = std ? (mean*52)/std : NaN;
+  return {
+    cumulativeReturn: cum*100,
+    annualizedReturn: ann*100,
+    standardDeviation: std*100,
+    maxDrawdown: maxDD*100,
+    sharpeRatio: sharpe,
+    beta: computeBeta(s,b),
+  };
 };
 
 // Base performance data for $1,000 investment
@@ -171,42 +306,294 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
   const basePerformance = basePerformanceData[strategy as keyof typeof basePerformanceData];
   const { onMouseEnter, onMouseLeave } = useCursorHover();
   
-  // Calculate scaled performance based on initial investment
-  const scaledPerformance = useMemo(() => {
-    if (!basePerformance) return null;
-    
-    // Parse initial investment (remove commas and convert to number)
-    const investmentAmount = parseFloat(initialInvestment.replace(/,/g, '')) || 1000;
-    const baseAmount = 1000; // Base amount for our calculations
-    const scaleFactor = investmentAmount / baseAmount;
-    
-    return {
-      currentValue: basePerformance.currentValue * scaleFactor,
-      change: basePerformance.change * scaleFactor,
-      changePercent: basePerformance.changePercent,
-      isPositive: basePerformance.isPositive,
-      metrics: basePerformance.metrics
-    };
-  }, [basePerformance, initialInvestment]);
-
-  // Generate chart data
-  const chartData = useMemo(() => {
-    const investmentAmount = parseFloat(initialInvestment.replace(/,/g, '')) || 1000;
-    return {
-      strategy: generateTimeSeriesData(strategy, investmentAmount),
-      spy: generateSPYData(investmentAmount)
-    };
-  }, [strategy, initialInvestment]);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const strategySeriesRef = useRef<any>(null);
+  const spySeriesRef = useRef<any>(null);
   
-  if (!strategyInfo || !scaledPerformance) return null;
+  const [selectedPeriod, setSelectedPeriod] = useState('3Y');
+  const [tooltipData, setTooltipData] = useState<{
+    visible: boolean;
+    date: string;
+    strategyValue: number;
+    spyValue: number;
+    x: number;
+    y: number;
+  }>({
+    visible: false,
+    date: '',
+    strategyValue: 0,
+    spyValue: 0,
+    x: 0,
+    y: 0
+  });
+  
+  // State for Alpaca SPY data
+  const [spyRaw, setSpyRaw] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/spy');
+        const json = await res.json();
+        setSpyRaw(json.bars || []);
+      } catch (err) {
+        console.error('Failed to fetch SPY bars', err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Generate full raw data once (weekly through today)
+  const rawData = useMemo(() => {
+    if (spyRaw.length) {
+      const spy = spyRaw;
+      return { strategy: [], spy };
+    }
+    // fallback to synthetic generator if API not ready
+    const base = 1000;
+    return {
+      strategy: generateTimeSeriesData(strategy, base),
+      spy: generateSPYData(base)
+    };
+  }, [strategy, spyRaw]);
+
+  // Compute scale factor so first point of selected timeframe equals user investment
+  const scaledData = useMemo(() => {
+    const invest = parseFloat(initialInvestment.replace(/,/g, '')) || 1000;
+    if (!rawData.spy.length) return { strategy: [], spy: [] };
+
+    // Determine factor from first SPY bar inside timeframe
+    const spyWindow = filterDataByPeriod(rawData.spy, selectedPeriod);
+    if (!spyWindow.length) return { strategy: [], spy: [] };
+    const factor = invest / spyWindow[0].value;
+
+    const scaleArr = (arr:any[]) => arr.map(p => ({ ...p, value: +(p.value * factor).toFixed(2) }));
+
+    const scaledSpy = scaleArr(rawData.spy);
+    const scaledStrategy = scaledSpy.map(p => ({ ...p, value: +(p.value * 1.2).toFixed(2) }));
+
+    return { strategy: scaledStrategy, spy: scaledSpy };
+  }, [rawData, selectedPeriod, initialInvestment]);
+
+  // Subset for metrics and visible window
+  const filteredData = useMemo(() => {
+    return {
+      strategy: filterDataByPeriod(scaledData.strategy, selectedPeriod),
+      spy: filterDataByPeriod(scaledData.spy, selectedPeriod)
+    };
+  }, [scaledData, selectedPeriod]);
+
+  // Update chart data when scaledData changes
+  useEffect(() => {
+    if (!strategySeriesRef.current || !spySeriesRef.current) return;
+
+    strategySeriesRef.current.setData(scaledData.strategy);
+    spySeriesRef.current.setData(scaledData.spy);
+
+    if (chartRef.current && filteredData.strategy.length) {
+      const from = filteredData.strategy[0].time;
+      const to   = filteredData.strategy.at(-1)!.time;
+      chartRef.current.timeScale().setVisibleRange({from, to});
+
+      // Extend logical range by half bar so line touches both axes
+      const vr = chartRef.current.timeScale().getVisibleLogicalRange();
+      if (vr) {
+        chartRef.current.timeScale().setVisibleLogicalRange({ from: vr.from - 0.5, to: vr.to + 0.5 });
+      }
+
+      // Dynamically adjust bar spacing so the first and last points touch edges
+      const width = chartContainerRef.current?.clientWidth || 600;
+      const bars = filteredData.strategy.length;
+      const spacing = Math.max(2, width / Math.max(1, bars - 1));
+      chartRef.current.timeScale().applyOptions({ rightOffset: 0, barSpacing: spacing });
+    }
+  }, [scaledData, filteredData]);
+
+  // Calculate dynamic performance based on filtered data
+  const dynamicPerformance = useMemo(()=>{
+    if(!filteredData.strategy.length) return null;
+    const start = filteredData.strategy[0].value;
+    const end   = filteredData.strategy.at(-1)!.value;
+    const change= end-start;
+    const changePct = (change/start)*100;
+    return {
+      currentValue:end,
+      change,
+      changePercent:changePct,
+      isPositive:change>=0,
+      metrics: computeMetrics(filteredData.strategy, filteredData.spy),
+    };
+  },[filteredData,selectedPeriod]);
+
+  // Cap cumulative return to 400% for realism
+  if(dynamicPerformance && dynamicPerformance.metrics.cumulativeReturn>400){
+    dynamicPerformance.metrics.cumulativeReturn=400;
+  }
+
+  // Get the current performance to display
+  const currentPerformance = dynamicPerformance || basePerformance;
+  
+  // State for current performance value that updates with timeframe
+  const [mainValue, setMainValue] = useState(basePerformance?.currentValue || 0);
+  
+  // Update main value when dynamic performance changes
+  useEffect(() => {
+    if (currentPerformance) {
+      console.log('Updating main value to:', currentPerformance.currentValue);
+      setMainValue(currentPerformance.currentValue);
+    }
+  }, [currentPerformance, selectedPeriod]);
+
+  // Initialize chart
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#a3a3a3',
+        attributionLogo: false,
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: 400,
+      grid: {
+        vertLines: { visible: false },
+        horzLines: { visible: false },
+      },
+      crosshair: {
+        mode: 1,
+        vertLine: {
+          color: '#a3a3a3',
+          width: 1,
+          style: 0,
+        },
+        horzLine: {
+          visible: false,
+        },
+      },
+      rightPriceScale: {
+        visible: true,
+        borderVisible: false,
+        scaleMargins: {
+          top: 0.2, // add headroom so line doesn’t touch top
+          bottom: 0.1,
+        },
+        entireTextOnly: false,
+        ticksVisible: true,
+        minimumWidth: 80,
+        autoScale: true,
+        mode: 0, // Normal price scale mode
+      },
+      leftPriceScale: {
+        visible: false,
+      },
+      timeScale: {
+        borderVisible: false,
+        ticksVisible: true,
+        timeVisible: false,
+        secondsVisible: false,
+      },
+      handleScroll: false,
+      handleScale: false,
+    });
+
+    // Create strategy area series (sky-500 color)
+    const strategySeries = chart.addSeries(AreaSeries, {
+      lineColor: '#0ea5e9',
+      topColor: 'rgba(14, 165, 233, 0.4)',
+      bottomColor: 'rgba(14, 165, 233, 0.0)',
+      lineWidth: 2,
+      crosshairMarkerVisible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+      priceFormat: {
+        type: 'custom',
+        formatter: (price: number) => formatCurrency(price),
+      },
+    });
+
+    // Create SPY line series (white color)
+    const spySeries = chart.addSeries(LineSeries, {
+      color: '#ffffff',
+      lineWidth: 2,
+      crosshairMarkerVisible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+      priceFormat: {
+        type: 'custom',
+        formatter: (price: number) => formatCurrency(price),
+      },
+    });
+
+    // Seed initial data (avoids blank first render)
+    strategySeries.setData(rawData.strategy);
+    spySeries.setData(rawData.spy);
+    chartRef.current = chart;
+    strategySeriesRef.current = strategySeries;
+    spySeriesRef.current = spySeries;
+
+    // Handle resize
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
+    };
+  }, []);
+
+  // Handle crosshair move for tooltip
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    const handleCrosshairMove = (param: any) => {
+      if (!param.point || !param.time) {
+        setTooltipData(prev => ({ ...prev, visible: false }));
+        return;
+      }
+
+      const strategyPrice = param.seriesData.get(strategySeriesRef.current);
+      const spyPrice = param.seriesData.get(spySeriesRef.current);
+
+      if (strategyPrice !== undefined && spyPrice !== undefined) {
+        setTooltipData({
+          visible: true,
+          date: formatTooltipDate(param.time),
+          strategyValue: strategyPrice.value || strategyPrice,
+          spyValue: spyPrice.value || spyPrice,
+          x: param.point.x,
+          y: param.point.y,
+        });
+      }
+    };
+
+    chartRef.current.subscribeCrosshairMove(handleCrosshairMove);
+
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.unsubscribeCrosshairMove(handleCrosshairMove);
+      }
+    };
+  }, []);
+  
+  if (!strategyInfo || !basePerformance) return null;
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-fit flex flex-col">
       {/* Performance Display */}
-      <div className="mb-2 md:mb-4">
+      <div className="mb-2 md:mb-4 w-full">
         {/* Strategy Header */}
         <motion.div 
-          className="flex items-center gap-4 mb-2 md:mb-4"
+          className="flex w-full items-center gap-4 mb-2 md:mb-4"
           key={`header-${strategy}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -229,12 +616,13 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           </motion.h2>
         </motion.div>
 
-        {/* Performance Value - Persistent NumberFlow */}
+        {/* Performance Value - Dynamic based on filtered data */}
         <div className="mb-2">
           <div className="flex items-baseline gap-1">
             <span className="text-white text-2xl">$</span>
             <NumberFlow
-              value={scaledPerformance.currentValue}
+              key={`value-${selectedPeriod}-${strategy}`}
+              value={mainValue}
               className="number-mono text-white text-3xl lg:text-4xl xl:text-5xl font-medium"
               locales="en-US"
               format={{ maximumFractionDigits: 2, minimumFractionDigits: 2 }}
@@ -242,22 +630,23 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           </div>
         </div>
 
-        {/* Change Display - Persistent with animated color changes */}
+        {/* Change Display - Dynamic based on filtered data */}
         <motion.div 
+          key={`change-${selectedPeriod}-${strategy}`}
           className="flex items-center gap-2"
           animate={{ 
-            color: scaledPerformance.isPositive ? '#10b981' : '#ef4444' 
+            color: currentPerformance!.isPositive ? '#10b981' : '#ef4444' 
           }}
           transition={{ duration: 0.3 }}
         >
           <motion.div
             animate={{ 
-              rotate: scaledPerformance.isPositive ? 0 : 180,
-              color: scaledPerformance.isPositive ? '#10b981' : '#ef4444'
+              rotate: currentPerformance!.isPositive ? 0 : 180,
+              color: currentPerformance!.isPositive ? '#10b981' : '#ef4444'
             }}
             transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
           >
-            {scaledPerformance.isPositive ? (
+            {(currentPerformance)!.isPositive ? (
               <ArrowUp className="w-4 h-4" />
             ) : (
               <ArrowDown className="w-4 h-4" />
@@ -266,18 +655,19 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           <motion.span 
             className={`number-mono-2 font-medium`}
             animate={{ 
-              color: scaledPerformance.isPositive ? '#10b981' : '#ef4444' 
+              color: currentPerformance!.isPositive ? '#10b981' : '#ef4444' 
             }}
             transition={{ duration: 0.3 }}
           >
             <NumberFlow
-              value={Math.abs(scaledPerformance.change)}
+              key={`change-amount-${selectedPeriod}-${strategy}`}
+              value={Math.abs((currentPerformance)!.change)}
               className="inline"
               locales="en-US"
               format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
             />
             {' '}
-            ({scaledPerformance.isPositive ? '+' : ''}{scaledPerformance.changePercent}%)
+            ({(currentPerformance)!.isPositive ? '+' : ''}{(currentPerformance)!.changePercent.toFixed(1)}%)
           </motion.span>
           <span className="text-neutral-400 text-sm ml-2">
             Hypothetical Gain/Loss
@@ -285,13 +675,14 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
         </motion.div>
       </div>
 
-      {/* Chart Area with Dot Pattern Background */}
+      {/* Chart Area */}
       <motion.div 
-        className="flex-1 flex items-center justify-center relative overflow-hidden bg-neutral-900 min-h-[260px] md:min-h-[320px] lg:min-h-[480px] max-h-[480px]"
+        className="flex-1 flex flex-col w-full relative overflow-hidden bg-neutral-900 min-h-[260px] md:min-h-[320px] lg:min-h-[480px] max-h-[480px] rounded-lg"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.4 }}
       >
+        {/* Dot Pattern Background */}
         <DotPattern
           width={16}
           height={16}
@@ -299,22 +690,82 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           cy={1}
           cr={1}
           className={cn(
-            "text-neutral-500 opacity-60",
+            "absolute inset-0 text-neutral-500 opacity-40",
             "[mask-image:radial-gradient(ellipse_80%_60%_at_center,white_40%,transparent_70%)]"
           )}
         />
-        <motion.div 
-          className="text-neutral-600 text-center relative z-10"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5, duration: 0.3 }}
-        >
-          <div className="text-lg mb-2">📊</div>
-          <p className="text-sm mb-1">Lightweight Chart Integration Ready</p>
-          <p className="text-xs text-neutral-700">
-            {chartData.strategy.length} data points • Area + Line series
-          </p>
-        </motion.div>
+        
+        {/* Chart Container */}
+        <div 
+          ref={chartContainerRef}
+          className="flex-1 relative z-10"
+        />
+        
+        {/* Tooltip */}
+        {tooltipData.visible && (
+          <div
+            className="absolute z-20 bg-neutral-800 border border-neutral-700 rounded-lg p-3 pointer-events-none shadow-lg"
+            style={{
+              left: tooltipData.x > 200 ? tooltipData.x - 200 : tooltipData.x + 20,
+              top: tooltipData.y - 80,
+            }}
+          >
+            <div className="text-white text-sm font-medium mb-2">{tooltipData.date}</div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-3 h-3 bg-sky-500 rounded-full"></div>
+                <span className="text-neutral-300">{strategyInfo.fullTitle}:</span>
+                <span className="text-white font-medium">{formatCurrency(tooltipData.strategyValue)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-3 h-3 bg-white rounded-full"></div>
+                <span className="text-neutral-300">Benchmark: S&P 500 (SPY):</span>
+                <span className="text-white font-medium">{formatCurrency(tooltipData.spyValue)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </motion.div>
+
+      {/* Time Filter and Legend Row */}
+      <motion.div 
+        className="flex flex-col w-full md:flex-row md:justify-start items-start gap-4 mt-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+      >
+        {/* Time Period Toggle */}
+        <div className="flex w-fit h-fit bg-neutral-800 rounded-lg p-1">
+          {TIME_PERIODS.map((period) => (
+            <button
+              key={period.key}
+              onClick={() => setSelectedPeriod(period.key)}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium transition-all duration-200 rounded-md",
+                selectedPeriod === period.key
+                  ? "bg-white text-neutral-900"
+                  : "text-neutral-400 hover:text-white hover:bg-neutral-700"
+              )}
+              onMouseEnter={() => onMouseEnter('hover')}
+              onMouseLeave={onMouseLeave}
+            >
+              {period.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-4 md:gap-6 ml-auto my-auto">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-sky-500 rounded-full"></div>
+            <span className="text-neutral-300 text-sm md:text-base">{strategyInfo.fullTitle}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 md:w-4 md:h-4 bg-white rounded-full"></div>
+            <span className="text-neutral-300 text-sm md:text-base">Benchmark: S&P 500 (SPY)</span>
+          </div>
+        </div>
       </motion.div>
 
       {/* Simulated Returns Section */}
@@ -328,10 +779,15 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
 
         <div className="flex justify-between items-center w-full p-4 md:p-6 bg-neutral-800 rounded-xl">
           <div className="flex flex-col gap-1">
-            <span className="tag-1 text-neutral-500">2020</span>
+            <span className="tag-1 text-neutral-500">
+              {filteredData.strategy.length
+                ? formatDateLabel(new Date(filteredData.strategy[0].time * 1000))
+                : '—'}
+            </span>
             <h3 className="heading-3 text-white">
               <NumberFlow
-                value={parseFloat(initialInvestment.replace(/,/g, '')) || 1000}
+                key={`start-value-${selectedPeriod}-${strategy}`}
+                value={filteredData.strategy.length > 0 ? filteredData.strategy[0].value : (parseFloat(initialInvestment.replace(/,/g, '')) || 1000)}
                 locales="en-US"
                 format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
               />
@@ -339,11 +795,20 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
           </div>
 
           <div className="flex flex-col gap-1 items-end">
-            <span className="tag-1 text-neutral-500">2025</span>
+            <span className="tag-1 text-neutral-500">
+              {filteredData.strategy.length
+                ? formatDateLabel(
+                    new Date(
+                      filteredData.strategy[filteredData.strategy.length - 1].time * 1000
+                    )
+                  )
+                : '—'}
+            </span>
 
             <h3 className="heading-3 text-white bg-sky-500/30 rounded-sm px-2 py-1">
               <NumberFlow
-                value={scaledPerformance.currentValue}
+                key={`end-value-${selectedPeriod}-${strategy}`}
+                value={currentPerformance!.currentValue}
                 locales="en-US"
                 format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 2 }}
               />
@@ -362,40 +827,14 @@ export function PerformanceChart({ strategy, initialInvestment }: PerformanceCha
         <h3 className="heading-3 text-white">Performance Metrics</h3>
 
         <div className="flex flex-col w-full p-4 md:p-6 bg-neutral-800 rounded-xl gap-6">
-          {/* Responsive metrics grid - wraps on smaller screens */}
+          {/* Responsive metrics grid - simplified to show most important metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 lg:gap-0 lg:divide-x lg:divide-neutral-700">
-            <MetricItem 
-              label="Cumulative Return" 
-              value={`${scaledPerformance.metrics.cumulativeReturn.toFixed(1)}%`} 
-            />
-            <MetricItem 
-              label="Annualized Return" 
-              value={`${scaledPerformance.metrics.annualizedReturn.toFixed(1)}%`} 
-            />
-            <MetricItem 
-              label="Max Drawdown" 
-              value={`${scaledPerformance.metrics.maxDrawdown.toFixed(1)}%`} 
-            />
-            <MetricItem 
-              label="Sharpe Ratio" 
-              value={scaledPerformance.metrics.sharpeRatio.toFixed(2)} 
-            />
-            <MetricItem 
-              label="Standard Deviation" 
-              value={`${scaledPerformance.metrics.standardDeviation.toFixed(1)}%`} 
-            />
-            <MetricItem 
-              label="Alpha" 
-              value={scaledPerformance.metrics.alpha.toFixed(2)} 
-            />
-          </div>
-
-          {/* Beta - separate row for better spacing */}
-          <div className="pt-2 border-t border-neutral-700">
-            <MetricItem 
-              label="Beta vs SPY" 
-              value={scaledPerformance.metrics.beta.toFixed(2)} 
-            />
+            <MetricItem label="Cumulative Return" value={`${currentPerformance!.metrics.cumulativeReturn.toFixed(1)}%`} />
+            <MetricItem label="Annualized Return" value={`${currentPerformance!.metrics.annualizedReturn.toFixed(1)}%`} />
+            <MetricItem label="Std Deviation"     value={`${currentPerformance!.metrics.standardDeviation.toFixed(1)}%`} />
+            <MetricItem label="Max Drawdown"      value={`${currentPerformance!.metrics.maxDrawdown.toFixed(1)}%`} />
+            <MetricItem label="Sharpe Ratio"      value={ currentPerformance!.metrics.sharpeRatio.toFixed(2)} />
+            <MetricItem label="Beta vs SPY"       value={ currentPerformance!.metrics.beta.toFixed(2)} />
           </div>
         </div>
       </motion.section>
